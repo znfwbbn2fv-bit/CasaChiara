@@ -1,9 +1,12 @@
 'use strict';
 (() => {
-const STORAGE_KEY='casachiara.pwa.v2'; // Chiave e struttura dei dati invariati.
-const ROLLBACK_KEY='casachiara.pwa.v2.before-import';
-const LAST_EXPORT_KEY='casachiara.pwa.v2.last-export-started';
-const APP_VERSION='2.1.0';
+const LEGACY_STORAGE_KEY='casachiara.pwa.v2';
+const STORAGE_KEY='casachiara.pwa.v3';
+const CORE=globalThis.CasaChiaraCore;
+if(!CORE)throw Error('Modulo CasaChiaraCore mancante.');
+const ROLLBACK_KEY='casachiara.pwa.v3.before-import';
+const LAST_EXPORT_KEY='casachiara.pwa.v3.last-export-started';
+const APP_VERSION='2.2.0';
 let backupFileMode='import';
 const money=new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'});
 const expenseCats=['Casa','Utenze','Alimentari','Trasporti','Salute','Tempo libero','Finanziamenti','Abbonamenti','Animali','Istruzione','Altro'];
@@ -13,7 +16,7 @@ const today=new Date();
 const toMonth = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
 const toDate = d => `${toMonth(d)}-${String(d.getDate()).padStart(2,'0')}`;
 const nowMonth=toMonth(today);
-const newState=()=>({version:2,settings:{openingMonth:nowMonth,openingCents:0},transactions:[],recurring:[]});
+const newState=()=>CORE.makeState(nowMonth);
 let state=newState(),view='dashboard',selectedMonth=nowMonth,storageOK=true,search='',kindFilter='all',recurringFilter='all',toastTimer;
 const el=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -29,24 +32,30 @@ function monthName(m,short=false){const [y,k]=m.split('-').map(Number);return ne
 function dueDate(m,day){const [y,k]=m.split('-').map(Number);const last=new Date(y,k,0).getDate();return `${m}-${String(Math.min(Math.max(day,1),last)).padStart(2,'0')}`}
 function amountFromInput(x,allowNegative=false){let t=String(x??'').replace(/[\s€]/g,'').trim();if(!t)return null; if(t.includes(','))t=t.replace(/\./g,'').replace(',','.');if(!/^-?\d+(\.\d{1,2})?$/.test(t))return null;const n=Number(t);if(!Number.isFinite(n)||Math.abs(n)>100000000)return null;const cents=Math.round(n*100);return ((!allowNegative&&cents<=0)||!Number.isSafeInteger(cents))?null:cents}
 function amountForInput(c){return (c/100).toFixed(2).replace('.',',')}
-function checkData(raw){if(!raw||raw.version!==2||!raw.settings||!Array.isArray(raw.transactions)||!Array.isArray(raw.recurring))throw new Error('Formato di backup non compatibile.');if(raw.transactions.length>100000||raw.recurring.length>5000)throw new Error('Archivio troppo grande.'); const clean=newState();const s=raw.settings;clean.settings={openingMonth:validMonth(s.openingMonth)?s.openingMonth:nowMonth,openingCents:Number.isSafeInteger(s.openingCents)&&Math.abs(s.openingCents)<=1e10?s.openingCents:0};
-  const ids=new Set();for(const t of raw.transactions){if(!t||typeof t.id!=='string'||ids.has(t.id)||!validDate(t.date)||!['income','expense'].includes(t.type)||!Number.isSafeInteger(t.amountCents)||t.amountCents<=0||t.amountCents>1e10||typeof t.description!=='string')throw Error('Movimento non valido nel backup.');ids.add(t.id);clean.transactions.push({id:t.id.slice(0,80),date:t.date,type:t.type,description:t.description.slice(0,160),category:String(t.category||'Altro').slice(0,80),amountCents:t.amountCents,recurringId:typeof t.recurringId==='string'?t.recurringId.slice(0,80):null,occMonth:validMonth(t.occMonth)?t.occMonth:null})}
-  for(const r of raw.recurring){if(!r||typeof r.id!=='string'||ids.has(r.id)||!['income','expense'].includes(r.type)||!validMonth(r.startMonth)||r.endMonth&&(!validMonth(r.endMonth)||r.endMonth<r.startMonth)||!Number.isInteger(r.day)||r.day<1||r.day>31||!Number.isSafeInteger(r.amountCents)||r.amountCents<=0||r.amountCents>1e10||typeof r.description!=='string')throw Error('Ricorrenza non valida nel backup.');ids.add(r.id);clean.recurring.push({id:r.id.slice(0,80),type:r.type,description:r.description.slice(0,160),category:String(r.category||'Altro').slice(0,80),amountCents:r.amountCents,startMonth:r.startMonth,endMonth:r.endMonth||null,day:r.day,active:r.active!==false})}
-  return clean;
-}
+function checkData(raw){return CORE.normalize(raw,nowMonth)}
 function displayStorageWarning(){el('alert-storage').hidden=storageOK}
-try {localStorage.setItem('__cc_test','1');localStorage.removeItem('__cc_test');const raw=localStorage.getItem(STORAGE_KEY);if(raw)state=checkData(JSON.parse(raw));}catch(err){storageOK=false;console.warn('Impossibile leggere la memoria locale:',err)}
-function applyChange(mutator){const previous=state;const draft=JSON.parse(JSON.stringify(state));mutator(draft);state=draft;if(save())return true;state=previous;return false}
+try{
+ localStorage.setItem('__cc_test','1');localStorage.removeItem('__cc_test');
+ const stored=localStorage.getItem(STORAGE_KEY),legacy=!stored?localStorage.getItem(LEGACY_STORAGE_KEY):null;
+ if(stored)state=checkData(JSON.parse(stored));
+ else if(legacy){state=checkData(JSON.parse(legacy));localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
+}catch(err){storageOK=false;console.warn('Impossibile leggere o migrare la memoria locale:',err)}
+function applyChange(mutator){const previous=state;const draft=JSON.parse(JSON.stringify(state));mutator(draft);state=checkData(draft);if(save())return true;state=previous;return false}
 function save(){if(!storageOK){displayStorageWarning();showToast('Archivio non disponibile: dati non salvati');return false}try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));return true}catch(err){showToast('Salvataggio non riuscito: liberare spazio e riprovare');return false}}
 function allForMonth(m){return state.transactions.filter(t=>t.date.startsWith(m)).sort((a,b)=>b.date.localeCompare(a.date))}
 function totalForMonth(m){const ts=allForMonth(m);let income=0,expense=0;for(const t of ts){if(t.type==='income')income+=t.amountCents;else expense+=t.amountCents}return {income,expense,net:income-expense,transactions:ts}}
-function sumBalance(m){let c=state.settings.openingCents;if(m<state.settings.openingMonth)return null;for(const t of state.transactions){if(t.date.slice(0,7)>=state.settings.openingMonth&&t.date.slice(0,7)<=m)c+=t.type==='income'?t.amountCents:-t.amountCents}return c}
+function sumBalance(m){return CORE.totalBalance(state,m)}
+function activeAccounts(){return state.accounts.filter(a=>a.active)}
+function defaultAccount(){return activeAccounts()[0]?.id||state.accounts[0].id}
+function accountName(id){return state.accounts.find(a=>a.id===id)?.name||'Conto mancante'}
+function accountOptions(selected){return state.accounts.filter(a=>a.active||a.id===selected).map(a=>`<option value="${esc(a.id)}" ${a.id===selected?'selected':''}>${esc(a.name)}</option>`).join('')}
+function accountTypeName(t){return ({bank:'Conto corrente',cash:'Contanti',prepaid:'Prepagata',savings:'Risparmi',other:'Altro'})[t]||'Altro'}
 function activeRule(r,m){return r.active&&r.startMonth<=m&&(!r.endMonth||r.endMonth>=m)}
 function completedRule(r,m){return state.transactions.some(t=>t.recurringId===r.id&&t.occMonth===m)}
 function pendingRules(m){return state.recurring.filter(r=>activeRule(r,m)&&!completedRule(r,m)).sort((a,b)=>a.day-b.day)}
 function planStats(m){let income=0,expense=0;for(const r of pendingRules(m)){if(r.type==='income')income+=r.amountCents;else expense+=r.amountCents}return {income,expense,net:income-expense}}
 function metric(title,amount,note,color,icon){return `<article class="card metric"><div class="metric-top"><h2>${esc(title)}</h2><span class="metric-icon ${color}">${icon}</span></div><div class="metric-value ${color}">${amount}</div><p>${esc(note)}</p></article>`}
-function entryList(ts,limit=null){let list=limit?ts.slice(0,limit):ts;return list.length?list.map(t=>`<div class="entry"><span class="entry-mark ${t.type}">${t.type==='income'?'↑':'↓'}</span><div class="entry-body"><strong>${esc(t.description)}</strong><small>${esc(t.category)} · ${new Date(t.date+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'})}${t.recurringId?' · Da ricorrenza':''}</small></div><span class="entry-amount ${t.type}">${t.type==='income'?'+':'−'} ${euro(t.amountCents)}</span><button class="icon-button" type="button" data-edit-transaction="${esc(t.id)}">Modifica</button></div>`).join(''):'<div class="empty"><strong>Nessun movimento</strong>Registra un’entrata o una spesa per iniziare.</div>'}
+function entryList(ts,limit=null){let list=limit?ts.slice(0,limit):ts;return list.length?list.map(t=>`<div class="entry"><span class="entry-mark ${t.type}">${t.type==='income'?'↑':'↓'}</span><div class="entry-body"><strong>${esc(t.description)}</strong><small>${esc(t.category)} · ${esc(accountName(t.accountId))} · ${new Date(t.date+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'})}${t.recurringId?' · Da ricorrenza':''}</small></div><span class="entry-amount ${t.type}">${t.type==='income'?'+':'−'} ${euro(t.amountCents)}</span><button class="icon-button" type="button" data-edit-transaction="${esc(t.id)}">Modifica</button></div>`).join(''):'<div class="empty"><strong>Nessun movimento</strong>Registra un’entrata o una spesa per iniziare.</div>'}
 function dashboard(){const t=totalForMonth(selectedMonth),b=sumBalance(selectedMonth),p=planStats(selectedMonth);let bars=[],max=1;for(let i=-5;i<=0;i++){const m=addMonth(selectedMonth,i),z=totalForMonth(m);bars.push({m,...z});max=Math.max(max,z.income,z.expense)}const graph=bars.map(z=>`<div class="bar-month" title="${esc(monthName(z.m))}: ${euro(z.income)} entrate, ${euro(z.expense)} uscite"><span class="bar income" style="height:${Math.max(2,Math.round(z.income/max*100))}%"></span><span class="bar expense" style="height:${Math.max(2,Math.round(z.expense/max*100))}%"></span><label>${esc(monthName(z.m,true))}</label></div>`).join('');
  let catMap={};for(const z of t.transactions.filter(z=>z.type==='expense'))catMap[z.category]=(catMap[z.category]||0)+z.amountCents;let cats=Object.entries(catMap).sort((a,b)=>b[1]-a[1]);let sum=cats.reduce((n,x)=>n+x[1],0),gradient=cats.length?(()=>{let cursor=0;return `conic-gradient(${cats.map(([_,n],i)=>{const a=cursor;cursor+=n/sum*100;return `${hues[i%hues.length]} ${a}% ${cursor}%`}).join(',')})`})():'conic-gradient(#edf0f6 0% 100%)';
  const donut=`<div class="donut-layout"><div class="donut" style="background:${gradient}"><div class="donut-hole"><strong>${euro(sum)}</strong><small>Spese effettive</small></div></div><div class="categories">${cats.length?cats.slice(0,8).map(([name,n],i)=>`<div class="cat-row"><span class="cat-name"><i class="dot" style="background:${hues[i%hues.length]}"></i>${esc(name)}</span><span class="cat-amount">${euro(n)}</span></div>`).join(''):'<span class="preview">Non ci sono ancora spese registrate.</span>'}</div></div>`;
