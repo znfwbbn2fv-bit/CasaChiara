@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f7fc">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="CasaChiara">
+<meta name="description" content="Finanze domestiche semplici, private e disponibili offline.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<title>CasaChiara · Finanze domestiche</title>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <a href="#panoramica" class="brand" aria-label="CasaChiara panoramica"><span class="brand-icon">⌂</span><span><strong>CasaChiara</strong><small>FINANZE DOMESTICHE</small></span></a>
+    <nav class="navigation" aria-label="Menu principale">
+      <button class="nav-item active" data-view="dashboard" type="button"><span class="nav-symbol">◫</span>Panoramica</button>
+      <button class="nav-item" data-view="transactions" type="button"><span class="nav-symbol">↕</span>Movimenti</button>
+      <button class="nav-item" data-view="recurring" type="button"><span class="nav-symbol">↻</span>Ricorrenze</button>
+      <button class="nav-item" data-view="settings" type="button"><span class="nav-symbol">⚙</span>Impostazioni</button>
+    </nav>
+    <div class="side-info"><strong>◉ Archivio privato</strong><span>Nessun account, pubblicità o tracciamento. I dati restano su questo dispositivo.</span><span>Esporta regolarmente un backup.</span></div>
+  </aside>
+  <main class="content">
+    <header class="page-head"><div><span class="eyebrow">IL TUO SPAZIO FINANZIARIO</span><h1 id="page-title">Le finanze, più semplici.</h1><p id="page-subtitle">Tutto sotto controllo, giorno dopo giorno.</p></div><div class="head-tools"><div class="period"><button id="prev-month" type="button" aria-label="Mese precedente">‹</button><span id="month-label">—</span><button id="next-month" type="button" aria-label="Mese successivo">›</button></div><button type="button" class="button primary" id="add-general">＋ Nuovo movimento</button></div></header>
+    <div id="alert-storage" class="alert error" role="alert" hidden>Il salvataggio locale non è disponibile. Non inserire dati reali: prova ad aprire l'app dalla schermata Home oppure da Safari con archiviazione attiva.</div>
+    <div id="app-content"><section class="card"><h2>CasaChiara</h2><p>Caricamento dell'applicazione…</p><p>Se questo messaggio rimane visibile, il browser non sta eseguendo JavaScript.</p></section></div>
+    <footer>CasaChiara 2.0 · Nessun servizio esterno · Backup manuale consigliato</footer>
+  </main>
+</div>
+<nav class="bottom-nav" aria-label="Navigazione mobile"><button type="button" data-view="dashboard" class="active"><span>◫</span>Panoramica</button><button type="button" data-view="transactions"><span>↕</span>Movimenti</button><button type="button" data-view="recurring"><span>↻</span>Ricorrenze</button><button type="button" data-view="settings"><span>⚙</span>Impostazioni</button></nav>
+<div id="dialog-root"></div><div id="toast" role="status" aria-live="polite"></div>
+<script src="app.js" defer></script>
+</body>
+</html>
