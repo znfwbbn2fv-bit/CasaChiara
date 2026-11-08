@@ -140,6 +140,48 @@ function startRecurring(id=null,opts={}){const r=id?state.recurring.find(x=>x.id
  <div class="dialog-body"><form id="recurring-form" data-type="${esc(type)}"><input id="recurring-id" type="hidden" value="${esc(r?.id||'')}"><div class="segmented"><button type="button" data-rule-type="expense" class="${type==='expense'?'selected':''}">− Spesa fissa</button><button type="button" data-rule-type="income" class="${type==='income'?'selected':''}">+ Entrata mensile</button></div><div class="two-columns"><div class="form-field full"><label for="recurring-description">Descrizione *</label><input class="field" id="recurring-description" maxlength="160" value="${esc(r?.description||'')}" required placeholder="Es. Affitto, stipendio, bolletta"></div><div class="form-field"><label for="recurring-amount">Importo previsto (€) *</label><input class="field" id="recurring-amount" inputmode="decimal" value="${r?esc(amountForInput(r.amountCents)):''}" placeholder="0,00" required></div><div class="form-field"><label for="recurring-category">Categoria *</label><select class="field" id="recurring-category">${options(type,r?.category||'')}</select></div><div class="form-field"><label for="recurring-account">Conto previsto *</label><select class="field" id="recurring-account">${accountOptions(r?.accountId||defaultAccount())}</select></div><div class="form-field"><label for="recurring-day">Giorno del mese *</label><input class="field" type="number" min="1" max="31" id="recurring-day" value="${r?.day||1}" required></div><div class="form-field"><label for="recurring-start">Dal mese *</label><input class="field" type="month" id="recurring-start" value="${esc(r?.startMonth||selectedMonth)}" required></div><div class="form-field"><label for="recurring-end">Fino al mese (facoltativo)</label><input class="field" type="month" id="recurring-end" value="${esc(r?.endMonth||'')}"></div><div class="form-field"><label for="recurring-active">Stato</label><select class="field" id="recurring-active"><option value="yes" ${r?.active===false?'':'selected'}>Attiva</option><option value="no" ${r?.active===false?'selected':''}>Sospesa</option></select></div></div><div class="notice">Un pagamento previsto non viene aggiunto automaticamente alle spese effettive.</div></form></div>
  <div class="dialog-foot">${r?`<button class="button danger small" type="button" data-delete-recurring="${esc(r.id)}">Elimina</button>`:'<span></span>'}<div class="backup-actions"><button class="button" type="button" data-close>Annulla</button><button class="button primary" type="submit" form="recurring-form">Salva</button></div></div>`)}
 
+
+function startBudget(category=null){
+ const original=category?state.budgets.find(x=>x.month===selectedMonth&&x.category===category):null;
+ const categories=[...new Set([...expenseCats,...state.transactions.filter(t=>t.type==='expense').map(t=>t.category),...state.budgets.map(b=>b.category)])].filter(Boolean);
+ const chosen=original?.category||categories.find(c=>!state.budgets.some(b=>b.month===selectedMonth&&b.category===c))||categories[0];
+ modal(`${modalHeader(original?'Modifica budget':'Nuovo budget mensile','Il budget non è una spesa e non modifica il saldo.')}
+ <div class="dialog-body"><form id="budget-form">
+ <input type="hidden" id="budget-old-month" value="${esc(original?.month||'')}">
+ <input type="hidden" id="budget-old-category" value="${esc(original?.category||'')}">
+ <div class="form-field"><label for="budget-month">Mese *</label><input class="field" id="budget-month" type="month" value="${esc(original?.month||selectedMonth)}" required></div>
+ <div class="form-field"><label for="budget-category">Categoria spesa *</label><select class="field" id="budget-category">${categories.map(c=>`<option value="${esc(c)}" ${chosen===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
+ <div class="form-field"><label for="budget-limit">Limite mensile (€) *</label><input class="field" id="budget-limit" inputmode="decimal" placeholder="Es. 250,00" value="${original?esc(amountForInput(original.limitCents)):''}" required></div></form>
+ <div class="notice">La soglia confronta soltanto le spese effettive della categoria nel mese indicato, indipendentemente dal conto utilizzato. Le ricorrenze future non sono conteggiate finché non confermate.</div></div>
+ <div class="dialog-foot">${original?`<button type="button" class="button danger small" id="delete-budget">Elimina</button>`:'<span></span>'}
+ <div class="backup-actions"><button type="button" class="button" data-close>Annulla</button><button type="submit" form="budget-form" class="button primary">Salva budget</button></div></div>`);
+}
+function budgetSubmit(){
+ const oldMonth=el('budget-old-month').value,oldCategory=el('budget-old-category').value;
+ const month=el('budget-month').value,category=el('budget-category').value;
+ const limitCents=amountFromInput(el('budget-limit').value);
+ if(!validMonth(month)||!category||category.length>80||limitCents===null)return alert('Controlla mese, categoria e importo positivo.');
+ const replacing=!!oldMonth&&!!oldCategory;
+ if(state.budgets.some(b=>b.month===month&&b.category===category&&(!replacing||b.month!==oldMonth||b.category!==oldCategory)))return alert('Per questa categoria esiste già un budget nel mese scelto. Modificalo invece di duplicarlo.');
+ if(!replacing&&state.budgets.length>=5000)return alert('Numero massimo di budget raggiunto.');
+ if(applyChange(d=>{
+   if(replacing)d.budgets=d.budgets.filter(b=>b.month!==oldMonth||b.category!==oldCategory);
+   d.budgets.push({month,category,limitCents});
+ })){closeModal();render();showToast(replacing?'Budget aggiornato':'Budget aggiunto')}
+}
+function deleteBudget(){
+ const month=el('budget-old-month')?.value,category=el('budget-old-category')?.value;
+ if(!month||!category)return;
+ if(!confirm('Eliminare il budget di '+category+' per '+month+'? I movimenti non verranno cancellati.'))return;
+ if(applyChange(d=>{d.budgets=d.budgets.filter(b=>b.month!==month||b.category!==category)})){closeModal();render();showToast('Budget eliminato')}
+}
+function copyBudgetsFromPrevious(){
+ const previous=addMonth(selectedMonth,-1),source=state.budgets.filter(b=>b.month===previous);
+ const added=source.filter(b=>!state.budgets.some(x=>x.month===selectedMonth&&x.category===b.category));
+ if(!added.length)return showToast('Nessun nuovo budget da copiare.');
+ if(!confirm('Copiare '+added.length+' budget da '+monthName(previous)+' a '+monthName(selectedMonth)+'? I budget già presenti nel mese non cambieranno.'))return;
+ if(applyChange(d=>{for(const b of added)d.budgets.push({month:selectedMonth,category:b.category,limitCents:b.limitCents})})){render();showToast(added.length+' budget copiati da '+monthName(previous))}
+}
 function startAccount(id=null){
  const a=id?state.accounts.find(x=>x.id===id):null;
  modal(`${modalHeader(a?'Modifica conto':'Nuovo conto','I saldi iniziali si riferiscono al mese di partenza dell’archivio.')}
