@@ -1,5 +1,5 @@
 'use strict';
-/* CasaChiara 2.2 — archivio versione 3. Solo dati locali, nessun servizio esterno. */
+/* CasaChiara 2.3 — archivio versione 3, budget opzionali retrocompatibili. */
 (function(global){
   const MAX_CENTS=10000000000;
   const TYPES=['bank','cash','prepaid','savings','other'];
@@ -15,13 +15,15 @@
   const identifier=x=>typeof x==='string'&&x.length>0&&x.length<=80;
   const kind=x=>['income','expense'].includes(x);
   const basicAccount=(openingCents=0)=>({id:'main',name:'Conto principale',type:'bank',openingCents,active:true});
-  const makeState=(m)=>({version:3,settings:{openingMonth:m,openingCents:0},accounts:[basicAccount()],transactions:[],recurring:[],transfers:[]});
+  const makeState=(m)=>({version:3,settings:{openingMonth:m,openingCents:0},accounts:[basicAccount()],transactions:[],recurring:[],transfers:[],budgets:[]});
 
   function normalize(raw, currentMonth){
     if(!raw||![2,3].includes(raw.version)||!raw.settings||!Array.isArray(raw.transactions)||!Array.isArray(raw.recurring))
       throw Error('Formato di archivio non compatibile.');
     if(!validMonth(raw.settings.openingMonth))throw Error('Mese iniziale non valido.');
     if(raw.transactions.length>100000||raw.recurring.length>5000)throw Error('Archivio troppo grande.');
+    if(raw.budgets!==undefined&&!Array.isArray(raw.budgets))throw Error('Budget non validi.');
+    if((raw.budgets||[]).length>5000)throw Error('Troppi budget.');
     if(!cents(raw.settings.openingCents))throw Error('Saldo iniziale non valido.');
     const legacy=raw.version===2;
     if(!legacy&&(!Array.isArray(raw.accounts)||!Array.isArray(raw.transfers)))throw Error('Conti o trasferimenti mancanti.');
@@ -65,6 +67,14 @@
         state.transfers.push({id:t.id,date:t.date,amountCents:t.amountCents,fromId:t.fromId,toId:t.toId,note:t.note.slice(0,160)});
       }
     }
+    const monthCategories=new Set();
+    for(const b of (raw.budgets||[])){
+      if(!b||!validMonth(b.month)||typeof b.category!=='string'||!name(b.category)||b.category.length>80||!nonzero(b.limitCents))throw Error('Budget non valido.');
+      const key=b.month+'|'+b.category;
+      if(monthCategories.has(key))throw Error('Categoria budget duplicata nello stesso mese.');
+      monthCategories.add(key);
+      state.budgets.push({month:b.month,category:b.category,limitCents:b.limitCents});
+    }
     const sum=state.accounts.reduce((n,a)=>n+a.openingCents,0);
     if(!Number.isSafeInteger(sum)||Math.abs(sum)>MAX_CENTS)throw Error('Totale saldi iniziali fuori limite.');
     if(!legacy&&sum!==raw.settings.openingCents)throw Error('I saldi iniziali dei conti non corrispondono al saldo complessivo.');
@@ -87,5 +97,24 @@
     if(month<state.settings.openingMonth)return null;
     return state.accounts.reduce((s,a)=>s+accountBalance(state,month,a.id),0);
   }
-  global.CasaChiaraCore=Object.freeze({makeState,normalize,accountBalance,totalBalance,validDate,validMonth,TYPES});
+  function budgetSummary(state,month){
+    const monthSpending=new Map();
+    for(const t of state.transactions){
+      if(t.type!=='expense'||t.date.slice(0,7)!==month)continue;
+      monthSpending.set(t.category,(monthSpending.get(t.category)||0)+t.amountCents);
+    }
+    const categories=state.budgets.filter(b=>b.month===month).map(b=>({
+      category:b.category,limitCents:b.limitCents,spentCents:monthSpending.get(b.category)||0,
+      remainingCents:b.limitCents-(monthSpending.get(b.category)||0)
+    }));
+    const covered=new Set(categories.map(b=>b.category));
+    return {
+      categories,
+      limitCents:categories.reduce((sum,b)=>sum+b.limitCents,0),
+      spentBudgetedCents:categories.reduce((sum,b)=>sum+b.spentCents,0),
+      spentUnbudgetedCents:[...monthSpending].filter(([c])=>!covered.has(c)).reduce((sum,[,v])=>sum+v,0),
+      overspentCount:categories.filter(b=>b.remainingCents<0).length
+    };
+  }
+  global.CasaChiaraCore=Object.freeze({makeState,normalize,accountBalance,totalBalance,budgetSummary,validDate,validMonth,TYPES});
 })(globalThis);
