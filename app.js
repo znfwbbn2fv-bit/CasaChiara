@@ -40,7 +40,7 @@ try{
  if(stored)state=checkData(JSON.parse(stored));
  else if(legacy){state=checkData(JSON.parse(legacy));localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
 }catch(err){storageOK=false;console.warn('Impossibile leggere o migrare la memoria locale:',err)}
-function applyChange(mutator){const previous=state;const draft=JSON.parse(JSON.stringify(state));mutator(draft);state=checkData(draft);if(save())return true;state=previous;return false}
+function applyChange(mutator){const previous=state;try{const draft=JSON.parse(JSON.stringify(state));mutator(draft);state=checkData(draft);if(save())return true;state=previous;return false}catch(err){state=previous;alert('Operazione annullata: '+err.message);return false}}
 function save(){if(!storageOK){displayStorageWarning();showToast('Archivio non disponibile: dati non salvati');return false}try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));return true}catch(err){showToast('Salvataggio non riuscito: liberare spazio e riprovare');return false}}
 function allForMonth(m){return state.transactions.filter(t=>t.date.startsWith(m)).sort((a,b)=>b.date.localeCompare(a.date))}
 function totalForMonth(m){const ts=allForMonth(m);let income=0,expense=0;for(const t of ts){if(t.type==='income')income+=t.amountCents;else expense+=t.amountCents}return {income,expense,net:income-expense,transactions:ts}}
@@ -105,6 +105,61 @@ function startTransaction(id=null,opts={}){const t=id?state.transactions.find(x=
 function startRecurring(id=null,opts={}){const r=id?state.recurring.find(x=>x.id===id):null;const type=r?.type||opts.type||'expense';modal(`${modalHeader(r?'Modifica ricorrenza':'Nuova ricorrenza','Una voce prevista ogni mese, da confermare quando effettiva.')}
  <div class="dialog-body"><form id="recurring-form" data-type="${esc(type)}"><input id="recurring-id" type="hidden" value="${esc(r?.id||'')}"><div class="segmented"><button type="button" data-rule-type="expense" class="${type==='expense'?'selected':''}">− Spesa fissa</button><button type="button" data-rule-type="income" class="${type==='income'?'selected':''}">+ Entrata mensile</button></div><div class="two-columns"><div class="form-field full"><label for="recurring-description">Descrizione *</label><input class="field" id="recurring-description" maxlength="160" value="${esc(r?.description||'')}" required placeholder="Es. Affitto, stipendio, bolletta"></div><div class="form-field"><label for="recurring-amount">Importo previsto (€) *</label><input class="field" id="recurring-amount" inputmode="decimal" value="${r?esc(amountForInput(r.amountCents)):''}" placeholder="0,00" required></div><div class="form-field"><label for="recurring-category">Categoria *</label><select class="field" id="recurring-category">${options(type,r?.category||'')}</select></div><div class="form-field"><label for="recurring-account">Conto previsto *</label><select class="field" id="recurring-account">${accountOptions(r?.accountId||defaultAccount())}</select></div><div class="form-field"><label for="recurring-day">Giorno del mese *</label><input class="field" type="number" min="1" max="31" id="recurring-day" value="${r?.day||1}" required></div><div class="form-field"><label for="recurring-start">Dal mese *</label><input class="field" type="month" id="recurring-start" value="${esc(r?.startMonth||selectedMonth)}" required></div><div class="form-field"><label for="recurring-end">Fino al mese (facoltativo)</label><input class="field" type="month" id="recurring-end" value="${esc(r?.endMonth||'')}"></div><div class="form-field"><label for="recurring-active">Stato</label><select class="field" id="recurring-active"><option value="yes" ${r?.active===false?'':'selected'}>Attiva</option><option value="no" ${r?.active===false?'selected':''}>Sospesa</option></select></div></div><div class="notice">Un pagamento previsto non viene aggiunto automaticamente alle spese effettive.</div></form></div>
  <div class="dialog-foot">${r?`<button class="button danger small" type="button" data-delete-recurring="${esc(r.id)}">Elimina</button>`:'<span></span>'}<div class="backup-actions"><button class="button" type="button" data-close>Annulla</button><button class="button primary" type="submit" form="recurring-form">Salva</button></div></div>`)}
+
+function startAccount(id=null){
+ const a=id?state.accounts.find(x=>x.id===id):null;
+ modal(`${modalHeader(a?'Modifica conto':'Nuovo conto','I saldi iniziali si riferiscono al mese di partenza dell’archivio.')}
+ <div class="dialog-body"><form id="account-form"><input type="hidden" id="account-id" value="${esc(a?.id||'')}">
+ <div class="form-field"><label for="account-name">Nome del conto *</label><input class="field" type="text" id="account-name" maxlength="80" placeholder="Es. Conto Banca, Contanti, Carta" value="${esc(a?.name||'')}" required></div>
+ <div class="form-field"><label for="account-type">Tipologia *</label><select class="field" id="account-type">${CORE.TYPES.map(t=>`<option value="${t}" ${(a?.type||'bank')===t?'selected':''}>${esc(accountTypeName(t))}</option>`).join('')}</select></div>
+ <div class="form-field"><label for="account-opening">Saldo al mese iniziale (€) *</label><input class="field" id="account-opening" inputmode="decimal" value="${esc(amountForInput(a?.openingCents||0))}" required><span class="field-hint">Usa 0,00 se sposti denaro da un conto già registrato tramite trasferimento. Evita di conteggiarlo due volte.</span></div>
+ <div class="form-field"><label for="account-active">Stato</label><select class="field" id="account-active"><option value="yes" ${a?.active===false?'':'selected'}>Attivo</option><option value="no" ${a?.active===false?'selected':''}>Archiviato</option></select></div>
+ </form><div class="notice">Modificare il saldo iniziale influisce sui saldi progressivi di tutti i mesi, non crea una nuova entrata o spesa.</div></div>
+ <div class="dialog-foot">${a? `<button class="button danger small" type="button" data-delete-account="${esc(a.id)}">Elimina</button>`:'<span></span>'}<div class="backup-actions"><button class="button" data-close type="button">Annulla</button><button class="button primary" form="account-form" type="submit">Salva conto</button></div></div>`);
+}
+function accountSubmit(){
+ const id=el('account-id').value,old=id?state.accounts.find(a=>a.id===id):null;
+ const name=el('account-name').value.trim(),type=el('account-type').value,openingCents=amountFromInput(el('account-opening').value,true),active=el('account-active').value==='yes';
+ if(!name||name.length>80||!CORE.TYPES.includes(type)||openingCents===null)return alert('Controlla nome, tipologia e saldo del conto.');
+ if(!active&&state.accounts.filter(a=>a.active&&a.id!==id).length===0)return alert('Mantieni almeno un conto attivo.');
+ if(!old&&state.accounts.length>=100)return alert('Numero massimo di conti raggiunto.');
+ const a={id:old?.id||uid(),name,type,openingCents,active};
+ if(applyChange(d=>{d.accounts=old?d.accounts.map(x=>x.id===id?a:x):[...d.accounts,a];d.settings.openingCents=d.accounts.reduce((sum,x)=>sum+x.openingCents,0)})){closeModal();render();showToast(old?'Conto aggiornato':'Conto aggiunto')}
+}
+function deleteAccount(id){
+ const a=state.accounts.find(x=>x.id===id);
+ if(!a)return;
+ if(state.accounts.length===1)return alert('Non puoi eliminare l’ultimo conto.');
+ if(state.transactions.some(t=>t.accountId===id)||state.recurring.some(r=>r.accountId===id)||state.transfers.some(t=>t.fromId===id||t.toId===id))return alert('Conto utilizzato: non può essere eliminato. Puoi archiviarlo da Modifica conto.');
+ if(!confirm('Eliminare il conto '+a.name+'? Il saldo iniziale complessivo sarà aggiornato.'))return;
+ if(applyChange(d=>{d.accounts=d.accounts.filter(x=>x.id!==id);d.settings.openingCents=d.accounts.reduce((n,x)=>n+x.openingCents,0)})){closeModal();render();showToast('Conto eliminato')}
+}
+function startTransfer(id=null){
+ if(activeAccounts().length<2&&!id)return alert('Per trasferire denaro servono almeno due conti attivi. Crea un secondo conto.');
+ const t=id?state.transfers.find(x=>x.id===id):null;
+ const opts=activeAccounts(),from=t?.fromId||opts[0].id,to=t?.toId||opts.find(a=>a.id!==from)?.id||'';
+ const date=t?.date||dueDate(selectedMonth,today.getDate());
+ modal(`${modalHeader(t?'Modifica trasferimento':'Nuovo trasferimento','Un trasferimento cambia i saldi dei conti ma non il risultato del mese.')}
+ <div class="dialog-body"><form id="transfer-form"><input type="hidden" id="transfer-id" value="${esc(t?.id||'')}">
+ <div class="form-field"><label for="transfer-from">Da conto *</label><select class="field" id="transfer-from">${accountOptions(from)}</select></div>
+ <div class="form-field"><label for="transfer-to">A conto *</label><select class="field" id="transfer-to">${accountOptions(to)}</select></div>
+ <div class="two-columns"><div class="form-field"><label for="transfer-amount">Importo (€) *</label><input class="field" id="transfer-amount" inputmode="decimal" value="${t?esc(amountForInput(t.amountCents)):''}" placeholder="0,00" required></div>
+ <div class="form-field"><label for="transfer-date">Data *</label><input class="field" type="date" id="transfer-date" value="${esc(date)}" required></div></div>
+ <div class="form-field"><label for="transfer-note">Nota (facoltativa)</label><input class="field" maxlength="160" id="transfer-note" value="${esc(t?.note||'')}" placeholder="Es. Prelievo bancomat"></div>
+ </form><div class="notice">Esempio: prelevare 50 € dal conto corrente e inserirli nei contanti riduce il primo saldo di 50 € e aumenta il secondo di 50 €. Il totale non cambia.</div></div>
+ <div class="dialog-foot">${t?`<button class="button danger small" data-delete-transfer="${esc(t.id)}" type="button">Elimina</button>`:'<span></span>'}<div class="backup-actions"><button class="button" data-close type="button">Annulla</button><button class="button primary" form="transfer-form" type="submit">Salva trasferimento</button></div></div>`);
+}
+function transferSubmit(){
+ const id=el('transfer-id').value,old=id?state.transfers.find(x=>x.id===id):null,fromId=el('transfer-from').value,toId=el('transfer-to').value,amountCents=amountFromInput(el('transfer-amount').value),date=el('transfer-date').value,note=el('transfer-note').value.trim();
+ if(!state.accounts.some(a=>a.id===fromId)||!state.accounts.some(a=>a.id===toId)||fromId===toId||amountCents===null||!CORE.validDate(date)||note.length>160)return alert('Controlla i conti, la data e l’importo positivo.');
+ if(date.slice(0,7)<state.settings.openingMonth)return alert('Il trasferimento è precedente al mese iniziale. Modifica i saldi iniziali dei conti.');
+ const t={id:old?.id||uid(),fromId,toId,amountCents,date,note};
+ if(applyChange(d=>{d.transfers=old?d.transfers.map(x=>x.id===id?t:x):[...d.transfers,t]})){closeModal();render();showToast(old?'Trasferimento aggiornato':'Trasferimento registrato')}
+}
+function deleteTransfer(id){
+ if(!confirm('Eliminare questo trasferimento? I saldi dei conti saranno ricalcolati.'))return;
+ if(applyChange(d=>{d.transfers=d.transfers.filter(x=>x.id!==id)})){closeModal();render();showToast('Trasferimento eliminato')}
+}
 function completeRecurring(id){const r=state.recurring.find(x=>x.id===id);if(!r||!activeRule(r,selectedMonth)||completedRule(r,selectedMonth))return showToast('Ricorrenza non disponibile o già confermata');let date=selectedMonth===nowMonth?toDate(today):dueDate(selectedMonth,r.day);startTransaction(null,{type:r.type,description:r.description,amountCents:r.amountCents,category:r.category,date,recurringId:r.id,occMonth:selectedMonth,accountId:r.accountId})}
 function transactionSubmit(){const id=el('transaction-id').value,old=id?state.transactions.find(t=>t.id===id):null,type=el('transaction-form').dataset.type,description=el('transaction-description').value.trim(),amountCents=amountFromInput(el('transaction-amount').value),category=el('transaction-category').value,date=el('transaction-date').value,recurringId=el('transaction-rule-id').value||null,occMonth=el('transaction-occ-month').value||null;if(!description||!category||amountCents===null||!validDate(date))return alert('Controlla descrizione, importo positivo e data valida.');if(recurringId&&state.transactions.some(t=>t.id!==id&&t.recurringId===recurringId&&t.occMonth===occMonth))return alert('Questa ricorrenza risulta già confermata per il mese indicato.');const accountId=el('transaction-account').value;if(!state.accounts.some(a=>a.id===accountId))return alert('Seleziona un conto valido.');const t={id:old?.id||uid(),date,type,description,category,amountCents,recurringId,occMonth,accountId};if(applyChange(d=>{d.transactions=old?d.transactions.map(x=>x.id===id?t:x):[...d.transactions,t]})){closeModal();render();showToast(old?'Movimento aggiornato':'Movimento registrato')} }
 function recurringSubmit(){const id=el('recurring-id').value,old=id?state.recurring.find(r=>r.id===id):null,type=el('recurring-form').dataset.type,description=el('recurring-description').value.trim(),amountCents=amountFromInput(el('recurring-amount').value),category=el('recurring-category').value,day=Number(el('recurring-day').value),startMonth=el('recurring-start').value,endMonth=el('recurring-end').value||null,active=el('recurring-active').value==='yes';if(!description||!category||amountCents===null||!Number.isInteger(day)||day<1||day>31||!validMonth(startMonth)||endMonth&&(!validMonth(endMonth)||endMonth<startMonth))return alert('Verifica l’importo, il giorno (1-31) e il periodo indicato.');const accountId=el('recurring-account').value;if(!state.accounts.some(a=>a.id===accountId))return alert('Seleziona un conto valido.');const r={id:old?.id||uid(),type,description,amountCents,category,day,startMonth,endMonth,active,accountId};if(applyChange(d=>{d.recurring=old?d.recurring.map(x=>x.id===id?r:x):[...d.recurring,r]})){closeModal();render();showToast(old?'Ricorrenza aggiornata':'Ricorrenza aggiunta')} }
