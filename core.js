@@ -1,5 +1,5 @@
 'use strict';
-/* CasaChiara 2.3 — archivio versione 3, budget opzionali retrocompatibili. */
+/* CasaChiara 2.3 — archivio versione 4, migrazione conservativa dei dati precedenti. */
 (function(global){
   const MAX_CENTS=10000000000;
   const TYPES=['bank','cash','prepaid','savings','other'];
@@ -15,13 +15,14 @@
   const identifier=x=>typeof x==='string'&&x.length>0&&x.length<=80;
   const kind=x=>['income','expense'].includes(x);
   const basicAccount=(openingCents=0)=>({id:'main',name:'Conto principale',type:'bank',openingCents,active:true});
-  const makeState=(m)=>({version:3,settings:{openingMonth:m,openingCents:0},accounts:[basicAccount()],transactions:[],recurring:[],transfers:[],budgets:[]});
+  const makeState=(m)=>({version:4,settings:{openingMonth:m,openingCents:0},accounts:[basicAccount()],transactions:[],recurring:[],transfers:[],budgets:[]});
 
   function normalize(raw, currentMonth){
-    if(!raw||![2,3].includes(raw.version)||!raw.settings||!Array.isArray(raw.transactions)||!Array.isArray(raw.recurring))
+    if(!raw||![2,3,4].includes(raw.version)||!raw.settings||!Array.isArray(raw.transactions)||!Array.isArray(raw.recurring))
       throw Error('Formato di archivio non compatibile.');
     if(!validMonth(raw.settings.openingMonth))throw Error('Mese iniziale non valido.');
     if(raw.transactions.length>100000||raw.recurring.length>5000)throw Error('Archivio troppo grande.');
+    if(raw.version===4&&!Array.isArray(raw.budgets))throw Error('Budget mancanti.');
     if(raw.budgets!==undefined&&!Array.isArray(raw.budgets))throw Error('Budget non validi.');
     if((raw.budgets||[]).length>5000)throw Error('Troppi budget.');
     if(!cents(raw.settings.openingCents))throw Error('Saldo iniziale non valido.');
