@@ -3,6 +3,8 @@
 CasaChiara è un'app web progressiva (PWA) gratuita pensata per iPhone, iPad e computer.
 
 ## Funzioni
+- Conti correnti, contanti, carte prepagate, risparmi e saldi per conto.
+- Trasferimenti interni neutri: non alterano entrate, uscite e patrimonio complessivo.
 - Dashboard con entrate, uscite e saldo mensile e progressivo.
 - Movimenti effettivi: entrate ricorrenti, entrate extra, spese fisse, spese extra.
 - Ricorrenze previste (non contabilizzate fino alla conferma).
@@ -35,3 +37,21 @@ Nessun hosting a pagamento o dominio personale richiesto. GitHub Pages serve il 
 - Migliore gestione dei salvataggi falliti: la memoria interna non finge un successo.
 - Cache offline aggiornata alla v2.1 con strategia network-first.
 - Backup non cifrati: l'avvio di un download non garantisce che il file sia stato salvato.
+
+## Versione 2.2 — Conti e trasferimenti
+
+- Sezione **Conti** nel menu laterale e nella navigazione mobile.
+- Crea e modifica conti (corrente, contanti, prepagata, risparmi, altro), con un saldo iniziale per ciascuno.
+- Il saldo progressivo complessivo è la somma dei conti. Entrate e spese sono attribuite a un conto.
+- Ogni ricorrenza può essere collegata a un conto.
+- I trasferimenti tra conti sono registrazioni autonome, **non** entrate/uscite: ad esempio un prelievo da conto corrente a contanti non aumenta le spese.
+- I conti con movimenti collegati non possono essere eliminati: possono essere archiviati.
+- Migrazione automatica dei dati **v2 → v3** al primo avvio: vecchi movimenti e ricorrenze vengono assegnati al **Conto principale**, con saldo iniziale uguale a quello precedente.
+- La vecchia chiave di archiviazione `casachiara.pwa.v2` non viene cancellata. La versione 2.2 usa `casachiara.pwa.v3`.
+- Backup JSON 2.0 e 2.1 ancora importabili; i nuovi backup 2.2 includono conti e trasferimenti e non possono essere importati in versioni precedenti.
+- Prima di aggiornare l'app, salva un backup JSON esterno. Se la migrazione non riesce, l'app segnala l'errore e non modifica l'archivio di origine.
+- Per trasferire denaro che è già stato contato nel saldo iniziale di un conto, crea il conto di destinazione con **saldo iniziale 0,00 €** e registra un trasferimento: altrimenti il patrimonio sarebbe duplicato.
+- I saldi iniziali sono riferiti allo stesso mese di partenza per tutti i conti; non sono un modo per rappresentare depositi avvenuti in un secondo momento.
+- Sono disponibili test automatici (`node --test tests/*.test.cjs`) e una verifica CI tramite GitHub Actions.
+
+L'archivio resta locale, offline e indipendente per ciascun dispositivo. Non è prevista sincronizzazione automatica. Le esportazioni JSON **non sono cifrate**, anche quando includono un controllo SHA-256.

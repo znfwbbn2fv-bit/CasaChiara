@@ -1,6 +1,6 @@
 'use strict';
-const CACHE='casachiara-static-v2.1.0';
-const ASSETS=['./','./index.html','./app.js','./style.css','./manifest.webmanifest','./icon-192.png','./icon-512.png','./favicon.svg'];
+const CACHE='casachiara-static-v2.2.0';
+const ASSETS=['./','./index.html','./core.js','./app.js','./style.css','./manifest.webmanifest','./icon-192.png','./icon-512.png','./favicon.svg'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
 });

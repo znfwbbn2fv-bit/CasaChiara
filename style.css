@@ -5,3 +5,13 @@
 @media(max-width:1250px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-grid{grid-template-columns:1fr}.donut-layout{justify-content:flex-start}}
 @media(max-width:760px){.shell{display:block}.sidebar{display:none}.content{padding:25px 15px 102px}.page-head{display:block}.page-head h1{font-size:27px}.head-tools{justify-content:space-between;margin-top:19px}.head-tools .button{flex:1}.period span{min-width:111px}.metrics{gap:10px}.card{border-radius:17px;padding:16px}.metric{min-height:136px}.metric-value{font-size:22px}.metric p{font-size:10px}.quick-grid{gap:10px}.quick-action{min-height:122px}.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;z-index:8;padding:9px 7px calc(9px + env(safe-area-inset-bottom));box-shadow:0 -7px 25px #37406410}.bottom-nav button{background:transparent;border:0;display:grid;place-items:center;gap:3px;font-size:10px;font-weight:750;color:#8c96a6;min-width:65px}.bottom-nav span{font-size:21px}.bottom-nav button.active{color:var(--purple)}.planned{grid-template-columns:1fr 1fr}.planned-item strong{font-size:18px}.donut-layout{flex-wrap:wrap}.donut{height:139px;width:139px;flex-basis:139px}.donut-hole{height:99px;width:99px}.settings-grid{grid-template-columns:1fr}.entry{flex-wrap:wrap}.entry-body{min-width:150px}.entry-actions{width:100%;justify-content:flex-end}.dialog{max-height:94dvh}.dialog-head,.dialog-body,.dialog-foot{padding-left:17px;padding-right:17px}}
 @media(max-width:380px){.metric-value{font-size:19px}.two-columns{grid-template-columns:1fr}.planned{grid-template-columns:1fr}.head-tools{display:grid;grid-template-columns:1fr}.quick-action{padding:12px}}
+/* CasaChiara 2.2: multi-account layout */
+.account-preview{margin:18px 0 20px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px}
+.account-preview-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px}
+.account-tile{display:grid;gap:6px;background:#f7f5ff;border:1px solid #efebfd;border-radius:15px;padding:14px;min-width:0}
+.account-tile small{color:#796eb9;font-size:11px}
+.account-tile strong{font-size:13px;overflow-wrap:anywhere}
+.account-tile span{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
+.entry-mark.transfer{background:#e8e8ff;color:#7266bd}
+@media(max-width:760px){.account-preview{padding:15px}.account-preview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.bottom-nav button{min-width:0;flex:1;font-size:10px;padding:3px 1px}.bottom-nav button span{font-size:19px}}
+@media(max-width:370px){.account-preview-grid{grid-template-columns:1fr}.bottom-nav button{font-size:9px}}
