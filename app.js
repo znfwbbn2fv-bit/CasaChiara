@@ -1,12 +1,13 @@
 'use strict';
 (() => {
-const LEGACY_STORAGE_KEY='casachiara.pwa.v2';
-const STORAGE_KEY='casachiara.pwa.v3';
+const LEGACY_STORAGE_KEY='casachiara.pwa.v3';
+const LEGACY_OLDER_KEY='casachiara.pwa.v2';
+const STORAGE_KEY='casachiara.pwa.v4';
 const CORE=globalThis.CasaChiaraCore;
 if(!CORE)throw Error('Modulo CasaChiaraCore mancante.');
-const ROLLBACK_KEY='casachiara.pwa.v3.before-import';
-const LAST_EXPORT_KEY='casachiara.pwa.v3.last-export-started';
-const APP_VERSION='2.2.0';
+const ROLLBACK_KEY='casachiara.pwa.v4.before-import';
+const LAST_EXPORT_KEY='casachiara.pwa.v4.last-export-started';
+const APP_VERSION='2.3.0';
 let backupFileMode='import';
 const money=new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'});
 const expenseCats=['Casa','Utenze','Alimentari','Trasporti','Salute','Tempo libero','Finanziamenti','Abbonamenti','Animali','Istruzione','Altro'];
@@ -36,7 +37,8 @@ function checkData(raw){return CORE.normalize(raw,nowMonth)}
 function displayStorageWarning(){el('alert-storage').hidden=storageOK}
 try{
  localStorage.setItem('__cc_test','1');localStorage.removeItem('__cc_test');
- const stored=localStorage.getItem(STORAGE_KEY),legacy=!stored?localStorage.getItem(LEGACY_STORAGE_KEY):null;
+ const stored=localStorage.getItem(STORAGE_KEY);
+ const legacy=!stored?(localStorage.getItem(LEGACY_STORAGE_KEY)||localStorage.getItem(LEGACY_OLDER_KEY)):null;
  if(stored)state=checkData(JSON.parse(stored));
  else if(legacy){state=checkData(JSON.parse(legacy));localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
 }catch(err){storageOK=false;console.warn('Impossibile leggere o migrare la memoria locale:',err)}
@@ -171,7 +173,7 @@ function backupStatus(){try{const t=localStorage.getItem(LAST_EXPORT_KEY);if(!t)
 function hasPreviousImport(){try{return !!checkData(JSON.parse(localStorage.getItem(ROLLBACK_KEY)||'null'))}catch{return false}}
 async function exportJSON(){try{const payload=checkData(state);const integrity=await sha256(JSON.stringify(payload));const backup={format:'casachiara.backup',backupVersion:1,appVersion:APP_VERSION,exportedAt:new Date().toISOString(),integrity:{algorithm:'SHA-256',sha256:integrity},data:payload};const timestamp=new Date().toISOString().slice(0,16).replace('T','_').replace(':','-');download(JSON.stringify(backup,null,2),`CasaChiara_backup_${timestamp}.json`,'application/json');try{localStorage.setItem(LAST_EXPORT_KEY,new Date().toISOString())}catch{}if(view==='settings')render();showToast('Esportazione avviata. Controlla il file in Download.') }catch(err){alert('Esportazione non riuscita: '+err.message)}}
 async function parseBackup(file){if(!file||file.size>12_000_000)throw Error('File mancante o troppo grande (max 12 MB).');const raw=JSON.parse(await file.text());if(raw?.format==='casachiara.backup'){if(raw.backupVersion!==1||raw.integrity?.algorithm!=='SHA-256'||typeof raw.integrity.sha256!=='string'||!/^[0-9a-f]{64}$/.test(raw.integrity.sha256))throw Error('Formato o impronta del backup non valido.');const calculated=await sha256(JSON.stringify(raw.data));if(calculated!==raw.integrity.sha256)throw Error('Controllo d’integrità fallito: il backup è stato modificato o danneggiato. Nessun dato è stato importato.');const cleaned=checkData(raw.data);return {data:cleaned,verified:true,exportedAt:raw.exportedAt}}const cleaned=checkData(raw);return {data:cleaned,verified:false,exportedAt:null}}
-function backupSummary(info){const d=info.data;return `${info.verified?'Impronta SHA-256 verificata':'Backup precedente senza impronta di integrità'}\nMovimenti: ${d.transactions.length}\nRicorrenze: ${d.recurring.length}\nConti: ${d.accounts.length}\nTrasferimenti: ${d.transfers.length}\nMese iniziale: ${d.settings.openingMonth}\nSaldo iniziale: ${euro(d.settings.openingCents)}${info.exportedAt?'\nCreato il: '+new Date(info.exportedAt).toLocaleString('it-IT'):''}`}
+function backupSummary(info){const d=info.data;return `${info.verified?'Impronta SHA-256 verificata':'Backup precedente senza impronta di integrità'}\nMovimenti: ${d.transactions.length}\nRicorrenze: ${d.recurring.length}\nConti: ${d.accounts.length}\nTrasferimenti: ${d.transfers.length}\nBudget: ${d.budgets.length}\nMese iniziale: ${d.settings.openingMonth}\nSaldo iniziale: ${euro(d.settings.openingCents)}${info.exportedAt?'\nCreato il: '+new Date(info.exportedAt).toLocaleString('it-IT'):''}`}
 function replaceArchiveWithRecovery(candidate){if(!storageOK)throw Error('Archivio locale non disponibile.');const old=JSON.stringify(state),oldRecovery=localStorage.getItem(ROLLBACK_KEY);try{localStorage.setItem(ROLLBACK_KEY,old);localStorage.setItem(STORAGE_KEY,JSON.stringify(candidate));state=candidate;return true}catch(err){try{if(oldRecovery===null)localStorage.removeItem(ROLLBACK_KEY);else localStorage.setItem(ROLLBACK_KEY,oldRecovery)}catch{}throw Error('Spazio o accesso all’archivio insufficiente: nessun movimento è stato sostituito.')}}
 function undoLastImport(){try{const raw=localStorage.getItem(ROLLBACK_KEY);if(!raw)throw Error('Non è disponibile un archivio precedente.');const candidate=checkData(JSON.parse(raw));if(!confirm(`Ripristinare l’archivio precedente (${candidate.transactions.length} movimenti, ${candidate.recurring.length} ricorrenze)? L’archivio corrente verrà sostituito.`))return;if(!storageOK)throw Error('Archivio locale non disponibile.');localStorage.setItem(STORAGE_KEY,JSON.stringify(candidate));state=candidate;localStorage.removeItem(ROLLBACK_KEY);render();showToast('Archivio precedente ripristinato')}catch(err){alert('Impossibile annullare l’importazione: '+err.message)}}
 function csvSafe(x){let v=String(x??'');if(/^[\s\t\r\n]*[=+@\-]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"'}
