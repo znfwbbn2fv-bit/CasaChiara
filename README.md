@@ -26,3 +26,12 @@ Per proteggere le finanze, evita di aprire la stessa origine GitHub Pages con co
 
 ## Note
 Nessun hosting a pagamento o dominio personale richiesto. GitHub Pages serve il codice gratuitamente; il primo accesso richiede Internet. Le notifiche di scadenza in background e la sincronizzazione multi-dispositivo non sono implementate in questa versione.
+
+## Versione 2.1 — protezione dei dati
+- Chiave di archiviazione e modello v2 invariati; non serve migrare i dati.
+- Backup JSON con impronta SHA-256 e verifica senza importare.
+- Compatibilità con backup JSON della versione precedente.
+- Copia locale di recupero prima dell'importazione e possibilità di annullarla.
+- Migliore gestione dei salvataggi falliti: la memoria interna non finge un successo.
+- Cache offline aggiornata alla v2.1 con strategia network-first.
+- Backup non cifrati: l'avvio di un download non garantisce che il file sia stato salvato.
