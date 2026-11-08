@@ -41,6 +41,7 @@
         state.accounts.push({id:a.id,name:a.name.trim().slice(0,80),type:a.type,openingCents:a.openingCents,active:a.active});
       }
     }
+    if(!state.accounts.some(a=>a.active))throw Error('È necessario almeno un conto attivo.');
     const accountIds=new Set(state.accounts.map(a=>a.id));
     const belongs=id=>typeof id==='string'&&accountIds.has(id);
     for(const t of raw.transactions){
