@@ -8,9 +8,9 @@ function v2(){
   {id:'old-inc',date:'2026-11-03',type:'income',description:'Entrata vecchia',amountCents:5000,category:'Stipendio',recurringId:null,occMonth:null}
  ],recurring:[{id:'old-rec',type:'expense',description:'Bolletta',category:'Utenze',amountCents:4000,startMonth:'2026-11',endMonth:null,day:15,active:true}]};
 }
-test('Migrazione v2 -> v3 senza modificare entrate, uscite e saldo',()=>{
+test('Migrazione v2 -> v4 senza modificare entrate, uscite e saldo',()=>{
  const s=c.normalize(v2(),'2026-11');
- assert.equal(s.version,3);
+ assert.equal(s.version,4);
  assert.equal(s.accounts.length,1);
  assert.equal(s.accounts[0].id,'main');
  assert.equal(s.accounts[0].openingCents,100000);

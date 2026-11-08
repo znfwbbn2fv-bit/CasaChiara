@@ -15,3 +15,34 @@
 .entry-mark.transfer{background:#e8e8ff;color:#7266bd}
 @media(max-width:760px){.account-preview{padding:15px}.account-preview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.bottom-nav button{min-width:0;flex:1;font-size:10px;padding:3px 1px}.bottom-nav button span{font-size:19px}}
 @media(max-width:370px){.account-preview-grid{grid-template-columns:1fr}.bottom-nav button{font-size:9px}}
+
+/* CasaChiara 2.3 — budget mensili e scadenziario */
+.planning-summary,.planning-budget,.planning-deadlines{margin:18px 0}
+.plan-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:13px 0 20px}
+.plan-metrics>div{display:flex;flex-direction:column;gap:7px;border:1px solid #eeeaf8;background:#faf8ff;border-radius:13px;padding:13px}
+.plan-metrics small{color:#817b94;font-size:11px;line-height:1.4}
+.plan-metrics strong{font-size:18px;font-variant-numeric:tabular-nums}
+.plan-metrics .bad,.budget-numbers .bad{color:#b54d64}
+.budget-row{border-top:1px solid var(--line);padding:15px 0}
+.budget-row-top,.budget-numbers{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.budget-row-top strong{font-size:14px}
+.budget-numbers{font-size:12px;color:var(--muted);margin:8px 0}
+.budget-numbers strong{font-size:12px;color:var(--green);font-variant-numeric:tabular-nums}
+.budget-track{height:9px;border-radius:99px;background:#ece9f5;overflow:hidden}
+.budget-fill{height:100%;border-radius:99px;background:#a69add;transition:width .2s ease}
+.budget-fill.over{background:#e28ca0}
+.planning-tools{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap}
+.planning-hint{font-size:12px;color:#7b869b;line-height:1.55;margin-top:14px}
+.deadline-badges{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.deadline-pill{font-size:11px;border-radius:99px;padding:5px 9px;background:#f1edf9;color:#6d6597;white-space:nowrap}
+.deadline-pill.overdue,.status.overdue{background:#ffedf0;color:#ad5366}
+.deadline-pill.near,.status.near{background:#fff3df;color:#927039}
+.planning-deadlines .entry{flex-wrap:wrap}
+.planning-deadlines .entry .button{white-space:nowrap}
+@media(max-width:700px){
+.plan-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.plan-metrics>div{padding:11px}
+.plan-metrics strong{font-size:16px}
+.planning-deadlines .entry{gap:8px}
+}
+@media(max-width:380px){.plan-metrics{grid-template-columns:1fr}.deadline-badges{margin-top:8px}}

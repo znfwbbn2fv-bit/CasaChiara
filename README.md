@@ -11,6 +11,7 @@ CasaChiara è un'app web progressiva (PWA) gratuita pensata per iPhone, iPad e c
 - Modifica/eliminazione dei movimenti, categorie, ricerca e grafici.
 - Saldo iniziale, esportazione CSV e backup/importazione JSON.
 - Uso offline dopo che l'app ha completato la prima installazione della cache.
+- Pianificazione per categoria: budget mensili e scadenze tratte dalle ricorrenze.
 
 ## Pubblicazione con GitHub Pages
 1. Apri **Settings → Pages** in questo repository.
@@ -55,3 +56,23 @@ Nessun hosting a pagamento o dominio personale richiesto. GitHub Pages serve il 
 - Sono disponibili test automatici (`node --test tests/*.test.cjs`) e una verifica CI tramite GitHub Actions.
 
 L'archivio resta locale, offline e indipendente per ciascun dispositivo. Non è prevista sincronizzazione automatica. Le esportazioni JSON **non sono cifrate**, anche quando includono un controllo SHA-256.
+
+## Versione 2.3 — Pianifica: budget e scadenziario
+
+- La voce **Ricorrenze** è rinominata **Pianifica**. Le ricorrenze precedenti restano presenti e modificabili.
+- **Budget mensile per categoria:** configura una soglia distinta per ciascuna categoria di spesa e per ogni mese.
+- Mostra limite, spesa effettiva, residuo e superamento; evidenzia le spese in categorie prive di budget separatamente, per non falsare il residuo.
+- I budget possono essere modificati/eliminati; è possibile copiare le categorie e i limiti dal mese precedente senza modificare quelli già impostati.
+- **Scadenziario** basato sulle ricorrenze attive e ancora da confermare. La scadenza può risultare superata, odierna, imminente entro 7 giorni, oppure programmata.
+- Gli avvisi sono **solo visivi all'interno dell'app**; non sono notifiche push e non si aggiornano mentre l'app è chiusa.
+- Una ricorrenza non confermata con data superata non prova che il pagamento sia mancato: verifica prima di premere Pagata/Incassata.
+- I budget e gli importi previsti **non modificano il saldo**: contano solo le transazioni effettivamente confermate; i trasferimenti tra conti restano neutri.
+- La dashboard mostra un riepilogo dei budget del mese selezionato.
+
+### Compatibilità e protezione dei dati
+
+- Archivio **versione 4** sotto la chiave locale `casachiara.pwa.v4`. La prima apertura della 2.3 migra l'archivio dalla versione 3 (o 2) e conserva la chiave precedente senza eliminarla.
+- Vecchi backup delle versioni 2.0, 2.1 e 2.2 sono importabili nella 2.3. I nuovi backup della 2.3 contengono budget e **non devono essere importati in versioni precedenti**.
+- Esporta e verifica un nuovo backup JSON dopo l'aggiornamento. Non cancellare i dati del sito né disinstallare l'app per forzare l'aggiornamento.
+- Il backup SHA-256 rileva errori o modifiche accidentali, ma non cifra i dati e non autentica il creatore del file.
+- I test di regressione dei conti e della pianificazione si eseguono con `node --test tests/*.test.cjs` e tramite GitHub Actions.
