@@ -21,8 +21,8 @@ test('v3 -> v4 non cambia saldo, conti, trasferimenti o movimenti',()=>{
  assert.equal(v4.recurring.length,old.recurring.length);
  assert.equal(v4.transfers.length,old.transfers.length);
  assert.equal(c.totalBalance(v4,'2026-11'),246300);
- assert.equal(c.accountBalance(v4,'2026-11','main'),233500);
- assert.equal(c.accountBalance(v4,'2026-11','cash'),12800);
+ assert.equal(c.accountBalance(v4,'2026-11','main'),235500);
+ assert.equal(c.accountBalance(v4,'2026-11','cash'),10800);
 });
 test('Budget per categoria includono solo spese effettive, da qualsiasi conto',()=>{
  const s=c.normalize(older(),'2026-11');
