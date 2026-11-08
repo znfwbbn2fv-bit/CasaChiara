@@ -76,3 +76,9 @@ L'archivio resta locale, offline e indipendente per ciascun dispositivo. Non è 
 - Esporta e verifica un nuovo backup JSON dopo l'aggiornamento. Non cancellare i dati del sito né disinstallare l'app per forzare l'aggiornamento.
 - Il backup SHA-256 rileva errori o modifiche accidentali, ma non cifra i dati e non autentica il creatore del file.
 - I test di regressione dei conti e della pianificazione si eseguono con `node --test tests/*.test.cjs` e tramite GitHub Actions.
+
+## Versione 2.3.1 — Attribution SEGNOTA Studio
+- In Dashboard compare la dicitura **Developed by SEGNOTA Studio**, discreta ma immediatamente riconoscibile.
+- La stessa attribuzione compare nel footer e in **Impostazioni → Informazioni sull'app**.
+- I metadati HTML e la descrizione del manifest indicano SEGNOTA Studio come autore/sviluppatore, mantenendo **CasaChiara** come nome dell'app.
+- Aggiornamento esclusivamente di presentazione: chiave locale `casachiara.pwa.v4` e schema finanziario invariati.

@@ -46,3 +46,14 @@
 .planning-deadlines .entry{gap:8px}
 }
 @media(max-width:380px){.plan-metrics{grid-template-columns:1fr}.deadline-badges{margin-top:8px}}
+
+/* CasaChiara 2.3.1 — studio attribution */
+.developer-credit{display:flex;align-items:center;gap:8px;width:fit-content;max-width:100%;margin:0 0 19px;padding:8px 13px;border:1px solid #ece6f8;border-radius:99px;background:#f6f2ff;color:#7f76a4;font-size:12px;font-weight:500;line-height:1.3}
+.developer-credit strong{color:#6154a7;font-weight:800;letter-spacing:.15px}
+.developer-credit-mark{display:inline-flex;align-items:center;justify-content:center;width:21px;height:21px;border-radius:50%;background:#e5dcfa;color:#7767db;font-size:13px;flex-shrink:0}
+.about-developer{display:inline-flex;align-items:center;gap:5px;margin:15px 0 6px;padding:10px 13px;border-radius:12px;background:#f6f2ff;color:#7767a7;font-size:13px;line-height:1.4}
+.about-developer strong{font-weight:800;color:#5f519f}
+.app-footer{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px 18px}
+.footer-credit{color:#8d819d;white-space:normal}
+.footer-credit strong{color:#7164ab;font-weight:800}
+@media(max-width:760px){.developer-credit{font-size:11px;padding:7px 10px;margin-bottom:15px}.app-footer{justify-content:center;text-align:center}.footer-credit{display:block;width:100%}}
