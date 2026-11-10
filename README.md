@@ -103,3 +103,28 @@ L'archivio resta locale, offline e indipendente per ciascun dispositivo. Non è 
 - Backup e ripristini JSON includono sia reconciliations che auditLog. Importare un backup precedente **sostituisce** anche la storia corrente: esporta sempre una nuova copia prima di importare.
 - Le verifiche e il registro delle modifiche non costituiscono una prova antifrode o una certificazione bancaria: il file locale può essere sostituito o alterato da chi ha accesso ai dati. Il registro serve alla diagnosi e al confronto personale.
 - Il servizio non legge conti bancari né informazioni esterne e non carica lo storico su GitHub.
+
+
+## Versione 2.5.0 — Diagnosi intelligente, casi e backup cifrati
+
+- Dashboard **Salute dei conti**: stato per conto, ultima verifica, casi ancora aperti, avviso se sono stati registrati nuovi movimenti dopo la verifica.
+- Riconciliazione: il confronto del saldo reale con quello calcolato mostra indicazioni **euristiche** (singoli importi corrispondenti, possibili doppi pagamenti e trasferimenti). Sono suggerimenti, non prove; l'app non modifica mai automaticamente i saldi.
+- Se una riconciliazione rileva uno scostamento diverso da zero, crea un **caso aperto**, con causa e note. I casi possono passare a **In verifica** o **Risolto**. Per dichiarare un caso risolto è necessario salvare un'ulteriore riconciliazione dello stesso conto con differenza zero, successiva all'apertura del caso.
+- Per ciascun caso è possibile collegare i cambiamenti del registro modifiche effettuati dopo l'apertura e conservare lo storico delle attività.
+- Le verifiche precedenti senza casi possono essere trasformate manualmente in nuovi casi; la versione 2.5 non inventa ricostruzioni storiche.
+
+### Backup con password
+
+Da **Impostazioni → Esporta backup cifrato con password** puoi esportare un file JSON protetto con password di **almeno 12 caratteri**. La cifratura usa **AES-256-GCM** con chiave derivata da password tramite **PBKDF2-HMAC-SHA-256** (310.000 iterazioni, sale casuale di 16 byte, IV casuale di 12 byte). Il file contiene soltanto il testo cifrato e i parametri necessari per il ripristino.
+
+Per importare o verificare un file cifrato utilizza le opzioni JSON già presenti nelle Impostazioni: CasaChiara riconosce il formato e chiede la password. I vecchi file JSON non cifrati continuano a funzionare. Una password errata o un file alterato impediscono il ripristino.
+
+La password **non è salvata né inviata**. Se perdi la password non esiste una procedura per recuperare quel backup. **La cifratura del backup non cifra i dati già salvati dentro la PWA**: la memoria locale resta protetta soltanto dai meccanismi del dispositivo e del browser. Il backup va comunque conservato fuori dal dispositivo, con controllo del download e verifica periodica del ripristino.
+
+### Compatibilità e sicurezza
+
+- Schema dell'archivio locale ancora **v4**, chiave **casachiara.pwa.v4**.
+- Nuovo campo facoltativo `reconciliationCases`, compatibile con i dati della versione 2.4.
+- I registri rimangono su dispositivo e sono inclusi in backup e ripristino.
+- Importando un backup vecchio si sostituiscono **tutti** i dati locali, compresi i casi e i registri creati successivamente. Prima esporta sempre una copia aggiornata.
+- I test CI verificano il calcolo dei saldi, le anomalie, la compatibilità degli archivi, la cifratura AES-GCM e la conservazione delle verifiche.
