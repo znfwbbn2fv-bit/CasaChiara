@@ -21,6 +21,7 @@ jobs:
           node --check core.js
           node --check reconciliation.js
           node --check reconciliation25.js
+          node --check planning26.js
           node --check secure-backup.js
           node --check app.js
           node --check sw.js
