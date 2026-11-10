@@ -110,3 +110,26 @@
 .recon-findings ul{padding-left:19px;margin:9px 0 0;line-height:1.65;color:#5d6881;font-size:12px}
 .recon-findings li{margin-top:7px}
 @media(max-width:760px){.recon-health-pill{font-size:10px}.recon-orphan{flex-wrap:wrap}.recon-orphan span{overflow-wrap:anywhere}}
+
+/* CasaChiara 2.6 — analisi finanziaria e scadenziario */
+.plan-forecast{margin-top:18px}
+.plan-forecast-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin:18px 0}
+.plan-forecast-grid>div{background:#f6f5fe;border:1px solid #ebe7fa;border-radius:13px;padding:16px;min-width:0}
+.plan-forecast-grid small{display:block;color:#7e899c;font-size:11px;line-height:1.5}
+.plan-forecast-grid strong{display:block;font-size:20px;font-weight:850;overflow-wrap:anywhere;margin-top:8px}
+.plan-forecast-grid strong.green{color:var(--green)}
+.plan-forecast-grid strong.red{color:var(--red)}
+.plan-forecast-grid .plan-forecast-result{background:var(--purple-light);border-color:#e0d8fd}
+.plan-forecast-budget{display:flex;flex-wrap:wrap;gap:8px 16px;padding:13px;background:#fafafe;border-radius:12px;font-size:12px;color:#768198}
+.plan-forecast-budget strong{color:var(--ink)}
+.plan-trend{margin-top:18px}
+.plan-trend-list{display:grid;gap:13px;margin-top:20px}
+.plan-trend-row{display:grid;grid-template-columns:66px minmax(0,1fr) minmax(75px,115px);align-items:center;gap:12px;font-size:12px}
+.plan-trend-row span{color:var(--muted)}
+.plan-trend-row strong{font-size:12px;text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.plan-trend-track{background:#f0edf9;border-radius:99px;height:14px;overflow:hidden}
+.plan-trend-bar{background:#a69aeb;border-radius:99px;height:100%}
+.plan-trend-bar.negative{background:#e9a7b6}
+.planning-deadlines .entry .entry-body small+small{color:#5d6680;font-size:11px;font-weight:650}
+@media(max-width:960px){.plan-forecast-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.plan-forecast-grid{gap:8px}.plan-forecast-grid>div{padding:11px}.plan-forecast-grid strong{font-size:18px}.plan-trend-row{grid-template-columns:54px minmax(0,1fr) minmax(70px,105px);gap:7px}.plan-trend-row strong{font-size:11px}}
