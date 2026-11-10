@@ -62,12 +62,12 @@
     const cases=[...(state.reconciliationCases||[])].filter(c=>accountId==='all'||c.accountId===accountId).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
     const accountName=id=>state.accounts.find(a=>a.id===id)?.name||'Conto non presente';
     const checks=state.reconciliations||[];
-    const orphan=checks.filter(c=>c.differenceCents!==0&&!cases.some(k=>k.checkId===c.id)&&!(state.reconciliationCases||[]).some(k=>k.checkId===c.id)).slice(-12).reverse();
+    const orphan=checks.filter(c=>c.differenceCents!==0&&!((state.reconciliationCases||[]).some(k=>k.checkId===c.id||(k.accountId===c.accountId&&k.status!=='resolved')))).slice(-12).reverse();
     const statusLabel=c=>labels[c.status]||c.status;
     return '<section class="card"><div class="section-header"><div><h2 class="section-title">Casi di riconciliazione</h2><p class="section-sub">Tieni aperti gli errori finché non sono spiegati e verificati.</p></div></div>'+
       (cases.length?cases.slice(0,60).map(c=>{
-        const original=checks.find(x=>x.id===c.checkId),fixes=(c.auditIds||[]).map(id=>state.auditLog.find(a=>a.id===id)).filter(Boolean);
-        return '<article class="recon-case"><div class="recon-history-head"><strong>'+esc(accountName(c.accountId))+' · '+esc(statusLabel(c))+'</strong><span>'+esc(original?.date||'')+'</span></div><p class="recon-minor">Scostamento iniziale: '+(original?euro(original.differenceCents):'—')+' · Causa: '+esc(c.reason||'Da determinare')+'</p>'+
+        const original=checks.find(x=>x.id===c.checkId),latestCheck=latest(checks.filter(x=>x.accountId===c.accountId)),fixes=(c.auditIds||[]).map(id=>state.auditLog.find(a=>a.id===id)).filter(Boolean);
+        return '<article class="recon-case"><div class="recon-history-head"><strong>'+esc(accountName(c.accountId))+' · '+esc(statusLabel(c))+'</strong><span>'+esc(original?.date||'')+'</span></div><p class="recon-minor">Scostamento iniziale: '+(original?euro(original.differenceCents):'—')+' · Ultimo scostamento: '+(latestCheck?euro(latestCheck.differenceCents):'—')+' · Causa: '+esc(c.reason||'Da determinare')+'</p>'+
           (c.note?'<p>'+esc(c.note)+'</p>':'')+
           (fixes.length?'<details><summary>Correzioni collegate ('+fixes.length+')</summary><ul>'+fixes.map(a=>'<li>'+esc(a.title)+' · '+esc(a.before)+' → '+esc(a.after)+'</li>').join('')+'</ul></details>':'<p class="recon-minor">Nessuna correzione collegata.</p>')+
           '<p class="recon-minor">Ultima attività: '+esc(fmt(c.updatedAt))+'</p><button class="button soft small" type="button" data-manage-case="'+esc(c.id)+'">Gestisci caso</button></article>';
