@@ -128,3 +128,30 @@ La password **non è salvata né inviata**. Se perdi la password non esiste una 
 - I registri rimangono su dispositivo e sono inclusi in backup e ripristino.
 - Importando un backup vecchio si sostituiscono **tutti** i dati locali, compresi i casi e i registri creati successivamente. Prima esporta sempre una copia aggiornata.
 - I test CI verificano il calcolo dei saldi, le anomalie, la compatibilità degli archivi, la cifratura AES-GCM e la conservazione delle verifiche.
+
+
+## CasaChiara 2.6.0 — Scadenziario evoluto e previsioni
+
+### Pagamenti ricorrenti con acconto e saldo finale
+- Apri **Pianifica** e seleziona **Registra pagamento/Registra incasso** su una ricorrenza.
+- La schermata mostra l'importo previsto, ma puoi indicare quello effettivamente pagato/incassato e il **conto realmente utilizzato**.
+- Scegli **Acconto** se hai saldato solo una parte: la scadenza resta aperta e viene visualizzato il residuo da completare.
+- Scegli **Saldo finale** per chiudere quella scadenza, anche se l'importo complessivo effettivo è diverso da quello previsto. CasaChiara indica la differenza tra consuntivo e preventivo.
+- Le transazioni precedenti alla 2.6, collegate a una ricorrenza, continuano a essere considerate **pagamenti finali**: vengono mantenute esattamente come erano, senza creare rate fittizie.
+- I trasferimenti fra conti restano neutri; gli acconti e i saldi finali sono entrate/uscite **solo per l'importo effettivamente registrato**.
+- È impedito registrare un secondo saldo finale per la stessa ricorrenza e mese. Non si possono inserire acconti che da soli raggiungono o superano il previsto: in quel caso va selezionato **Saldo finale**.
+- La scadenza può risultare **Programmata**, **Scade oggi**, **Scadenza da verificare**, **Parziale** o **Confermata**. Il fatto che risulti scaduta non dimostra che il pagamento sia mancato: confronta l'estratto conto.
+
+### Dashboard: saldi storici e previsione di fine mese
+- **Andamento del patrimonio:** saldi progressivi calcolati per gli ultimi sei mesi rispetto al mese visualizzato. Non considera i trasferimenti interni come ricavi o spese.
+- **Previsione di fine mese:** mostra una stima limitata al mese corrente, sommando al saldo risultante dalle transazioni inserite i residui delle ricorrenze ancora aperte. Se non ci sono ricorrenze attive, questa previsione non è una stima di tutte le spese future.
+- **Budget contro consuntivo:** confronta i limiti impostati con le sole spese già registrate nelle rispettive categorie. Non sottrae il budget una seconda volta dal saldo previsto.
+- Le proiezioni **non sono saldi bancari** e non comprendono le spese future non programmate o le entrate non previste. Se hai inserito movimenti datati nel futuro, essi compaiono già nel saldo calcolato del mese; non vengono contabilizzati due volte.
+- Le funzionalità rimangono **locali e offline**, senza notifiche push o lettura automatica del conto bancario.
+
+### Backup, storicità e collaudo
+- Lo schema resta alla **versione 4** e l'archivio mantiene la chiave **casachiara.pwa.v4**: nessuna migrazione distruttiva e nessuna modifica dei saldi all'avvio.
+- Nuovi campi opzionali in ogni transazione ricorrente: recurringFinal (acconto/saldo finale) e plannedCents (importo originariamente previsto).
+- I backup JSON ordinari e cifrati contengono anche questi dettagli. Il file CSV dei movimenti riporta conto, importo previsto e tipo di rata.
+- Il registro delle modifiche conserva anche il passaggio acconto/saldo finale.
+- Prima dell'aggiornamento esporta e verifica un backup cifrato esterno. Non eliminare la PWA o i dati del sito per forzare un aggiornamento.
