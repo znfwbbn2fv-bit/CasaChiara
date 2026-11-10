@@ -6,7 +6,7 @@ test('La riconciliazione dall’interfaccia salva nel registro senza modificare 
  const el=id=>{if(!nodes.has(id))nodes.set(id,{id,hidden:false,value:'',textContent:'',innerHTML:'',style:{},classList:{toggle(){}},setAttribute(){},querySelector(){return null},replaceChildren(){}});return nodes.get(id)};
  const document={getElementById:el,querySelectorAll(){return []},addEventListener(event,cb){handlers[event]=cb}};
  const localStorage={getItem:k=>content.get(k)??null,setItem:(k,v)=>content.set(k,String(v)),removeItem:k=>content.delete(k)};
- const sandbox=vm.createContext({document,localStorage,window:{addEventListener(){},scrollTo(){}},navigator:{},location:{protocol:'https:'},alert(msg){throw Error(msg)},confirm(){return false},setTimeout(){return 0},clearTimeout(){},console,Intl,Date,Math,JSON,Number,Map,Set,Error});
+ const sandbox=vm.createContext({document,localStorage,window:{addEventListener(){},scrollTo(){}},navigator:{},location:{protocol:'https:'},alert(msg){throw Error(msg)},confirm(){return false},TextEncoder,TextDecoder,btoa,atob,setTimeout(){return 0},clearTimeout(){},console,Intl,Date,Math,JSON,Number,Map,Set,Error});
  vm.runInContext(read('core.js'),sandbox);
  vm.runInContext(read('reconciliation.js'),sandbox);
  vm.runInContext(read('reconciliation25.js'),sandbox);
