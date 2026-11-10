@@ -11,6 +11,7 @@ test('La riconciliazione dall’interfaccia salva nel registro senza modificare 
  vm.runInContext(read('reconciliation.js'),sandbox);
  vm.runInContext(read('reconciliation25.js'),sandbox);
  vm.runInContext(read('secure-backup.js'),sandbox);
+ vm.runInContext(read('planning26.js'),sandbox);
  const now=new Date(),month=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0')].join('-'),date=month+'-01';
  const opening=83000;
  const s=sandbox.CasaChiaraCore.makeState(month);

@@ -52,7 +52,29 @@
       uniq(t.id);
       const accountId=legacy?'main':t.accountId;
       if(!belongs(accountId))throw Error('Movimento riferito a un conto inesistente.');
-      state.transactions.push({id:t.id,date:t.date,type:t.type,description:t.description.slice(0,160),category:String(t.category||'Altro').slice(0,80),amountCents:t.amountCents,recurringId:typeof t.recurringId==='string'?t.recurringId.slice(0,80):null,occMonth:validMonth(t.occMonth)?t.occMonth:null,accountId});
+      if(t.recurringFinal!==undefined&&typeof t.recurringFinal!=='boolean')throw Error('Stato della rata ricorrente non valido.');
+      if(t.plannedCents!==undefined&&!nonzero(t.plannedCents))throw Error('Importo previsto della ricorrenza non valido.');
+      if((t.recurringFinal!==undefined||t.plannedCents!==undefined)&&!(typeof t.recurringId==='string'&&validMonth(t.occMonth)))throw Error('Metadati della ricorrenza non associati a un periodo.');
+      const entry={id:t.id,date:t.date,type:t.type,description:t.description.slice(0,160),category:String(t.category||'Altro').slice(0,80),amountCents:t.amountCents,recurringId:typeof t.recurringId==='string'?t.recurringId.slice(0,80):null,occMonth:validMonth(t.occMonth)?t.occMonth:null,accountId};
+      if(t.recurringFinal!==undefined)entry.recurringFinal=t.recurringFinal;
+      if(t.plannedCents!==undefined)entry.plannedCents=t.plannedCents;
+      state.transactions.push(entry);
+    }
+    // Existing linked transactions without recurringFinal remain final by default.
+    // New installments may have several lines per month, but at most one final line.
+    const perPeriod=new Map();
+    for(const t of state.transactions){
+      if(!t.recurringId||!t.occMonth)continue;
+      const k=t.recurringId+'|'+t.occMonth;
+      const lines=perPeriod.get(k)||[];
+      lines.push(t);perPeriod.set(k,lines);
+    }
+    for(const lines of perPeriod.values()){
+      if(lines.filter(t=>t.recurringFinal!==false).length>1&&lines.some(t=>t.recurringFinal!==undefined||t.plannedCents!==undefined))throw Error('Due pagamenti conclusivi per la stessa ricorrenza.');
+      const planned=lines.filter(t=>t.plannedCents!==undefined).map(t=>t.plannedCents);
+      if(planned.length&&planned.some(x=>x!==planned[0]))throw Error('Importi previsti incoerenti nella stessa ricorrenza.');
+      const sumPartial=lines.filter(t=>t.recurringFinal===false).reduce((sum,t)=>sum+t.amountCents,0);
+      if(planned.length&&sumPartial>=planned[0])throw Error('Una rata parziale non può coprire o superare tutto il previsto: usa Conferma saldo finale.');
     }
     for(const r of raw.recurring){
       if(!r||!kind(r.type)||!validMonth(r.startMonth)||(r.endMonth!=null&&(!validMonth(r.endMonth)||r.endMonth<r.startMonth))||!Number.isInteger(r.day)||r.day<1||r.day>31||!nonzero(r.amountCents)||!name(r.description))throw Error('Ricorrenza non valida.');
