@@ -70,7 +70,7 @@
       lines.push(t);perPeriod.set(k,lines);
     }
     for(const lines of perPeriod.values()){
-      if(lines.filter(t=>t.recurringFinal!==false).length>1)throw Error('Due pagamenti conclusivi per la stessa ricorrenza.');
+      if(lines.filter(t=>t.recurringFinal!==false).length>1&&lines.some(t=>t.recurringFinal!==undefined||t.plannedCents!==undefined))throw Error('Due pagamenti conclusivi per la stessa ricorrenza.');
       const planned=lines.filter(t=>t.plannedCents!==undefined).map(t=>t.plannedCents);
       if(planned.length&&planned.some(x=>x!==planned[0]))throw Error('Importi previsti incoerenti nella stessa ricorrenza.');
       const sumPartial=lines.filter(t=>t.recurringFinal===false).reduce((sum,t)=>sum+t.amountCents,0);
