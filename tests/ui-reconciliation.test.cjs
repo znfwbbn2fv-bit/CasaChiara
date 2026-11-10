@@ -9,6 +9,8 @@ test('La riconciliazione dall’interfaccia salva nel registro senza modificare 
  const sandbox=vm.createContext({document,localStorage,window:{addEventListener(){},scrollTo(){}},navigator:{},location:{protocol:'https:'},alert(msg){throw Error(msg)},confirm(){return false},setTimeout(){return 0},clearTimeout(){},console,Intl,Date,Math,JSON,Number,Map,Set,Error});
  vm.runInContext(read('core.js'),sandbox);
  vm.runInContext(read('reconciliation.js'),sandbox);
+ vm.runInContext(read('reconciliation25.js'),sandbox);
+ vm.runInContext(read('secure-backup.js'),sandbox);
  const now=new Date(),month=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0')].join('-'),date=month+'-01';
  const opening=83000;
  const s=sandbox.CasaChiaraCore.makeState(month);
