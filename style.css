@@ -57,3 +57,30 @@
 .footer-credit{color:#8d819d;white-space:normal}
 .footer-credit strong{color:#7164ab;font-weight:800}
 @media(max-width:760px){.developer-credit{font-size:11px;padding:7px 10px;margin-bottom:15px}.app-footer{justify-content:center;text-align:center}.footer-credit{display:block;width:100%}}
+
+/* v2.4.0 — riconciliazione e registro modifiche */
+.recon-intro,.recon-history-item,.recon-log{margin-bottom:17px}
+.recon-comparison{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:10px 0 16px}
+.recon-comparison>div{background:#f5f4ff;border:1px solid #ebe7fa;border-radius:13px;padding:14px;min-width:0}
+.recon-comparison small,.recon-log-detail small{display:block;color:#7e899c;font-size:11px;font-weight:800;margin-bottom:8px}
+.recon-comparison strong{font-size:clamp(15px,2vw,21px);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.recon-minor{color:#7b8798;font-size:12px;line-height:1.6}
+.recon-filter{max-width:330px;margin-bottom:13px}
+.recon-history-item{border:1px solid #ebeef4;border-radius:15px;padding:16px;background:#fff}
+.recon-history-item.recon-alert{border-left:4px solid var(--yellow)}
+.recon-history-item.recon-ok{border-left:4px solid var(--green)}
+.recon-history-head{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.recon-history-head span{font-size:11px;color:var(--muted)}
+.recon-pairs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.recon-pairs span{font-size:11px;color:var(--muted);line-height:1.8}
+.recon-pairs strong{display:block;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.recon-history-item p{margin:10px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.recon-log{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:10px}
+.recon-log summary{display:flex;flex-wrap:wrap;align-items:center;gap:12px;justify-content:space-between;padding:14px;cursor:pointer;list-style:none;font-size:12px}
+.recon-log summary::-webkit-details-marker{display:none}
+.recon-log summary:after{content:"▾";color:var(--purple)}
+.recon-log summary span{font-size:11px;color:var(--muted)}
+.recon-log-detail{padding:14px;border-top:1px solid var(--line);display:grid;gap:10px}
+.recon-log-detail>div{border-radius:11px;background:#f8f8fc;padding:12px}
+.recon-log-detail p{white-space:pre-wrap;overflow-wrap:anywhere;margin:0;font-size:12px;line-height:1.7}
+@media(max-width:760px){.bottom-nav button{min-width:0;flex:1;font-size:9px;padding:3px 1px}.bottom-nav span{font-size:19px}.recon-comparison,.recon-pairs{grid-template-columns:1fr;gap:5px}.recon-comparison>div{padding:10px 12px}.recon-comparison strong{font-size:19px}.recon-pairs span{display:flex;justify-content:space-between;gap:10px}}
