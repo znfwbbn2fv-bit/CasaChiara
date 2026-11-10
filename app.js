@@ -239,8 +239,42 @@ function deleteTransfer(id){
  if(!confirm('Eliminare questo trasferimento? I saldi dei conti saranno ricalcolati.'))return;
  if(applyChange(d=>{d.transfers=d.transfers.filter(x=>x.id!==id)})){closeModal();render();showToast('Trasferimento eliminato')}
 }
-function completeRecurring(id){const r=state.recurring.find(x=>x.id===id);if(!r||!activeRule(r,selectedMonth)||completedRule(r,selectedMonth))return showToast('Ricorrenza non disponibile o già confermata');let date=selectedMonth===nowMonth?toDate(today):dueDate(selectedMonth,r.day);startTransaction(null,{type:r.type,description:r.description,amountCents:r.amountCents,category:r.category,date,recurringId:r.id,occMonth:selectedMonth,accountId:r.accountId})}
-function transactionSubmit(){const id=el('transaction-id').value,old=id?state.transactions.find(t=>t.id===id):null,type=el('transaction-form').dataset.type,description=el('transaction-description').value.trim(),amountCents=amountFromInput(el('transaction-amount').value),category=el('transaction-category').value,date=el('transaction-date').value,recurringId=el('transaction-rule-id').value||null,occMonth=el('transaction-occ-month').value||null;if(!description||!category||amountCents===null||!validDate(date))return alert('Controlla descrizione, importo positivo e data valida.');if(recurringId&&state.transactions.some(t=>t.id!==id&&t.recurringId===recurringId&&t.occMonth===occMonth))return alert('Questa ricorrenza risulta già confermata per il mese indicato.');const accountId=el('transaction-account').value;if(!state.accounts.some(a=>a.id===accountId))return alert('Seleziona un conto valido.');const t={id:old?.id||uid(),date,type,description,category,amountCents,recurringId,occMonth,accountId};if(applyChange(d=>{d.transactions=old?d.transactions.map(x=>x.id===id?t:x):[...d.transactions,t]})){closeModal();render();showToast(old?'Movimento aggiornato':'Movimento registrato')} }
+function completeRecurring(id){
+ const r=state.recurring.find(x=>x.id===id);
+ if(!r||!activeRule(r,selectedMonth)||completedRule(r,selectedMonth))return showToast('Ricorrenza non disponibile o già conclusa');
+ const o=PLAN.occurrence(state,r,selectedMonth);
+ const date=selectedMonth===nowMonth?toDate(today):PLAN.dateOf(selectedMonth,r.day);
+ startTransaction(null,{type:r.type,description:r.description,amountCents:o.remaining||r.amountCents,category:r.category,date,recurringId:r.id,occMonth:selectedMonth,accountId:r.accountId,plannedCents:o.expected,recurringFinal:true});
+}
+function transactionSubmit(){
+ const id=el('transaction-id').value,old=id?state.transactions.find(t=>t.id===id):null,form=el('transaction-form');
+ const type=form.dataset.type,description=el('transaction-description').value.trim(),amountCents=amountFromInput(el('transaction-amount').value),category=el('transaction-category').value,date=el('transaction-date').value;
+ const recurringId=el('transaction-rule-id').value||null,occMonth=el('transaction-occ-month').value||null;
+ if(!description||!category||amountCents===null||!validDate(date)||!['income','expense'].includes(type))return alert('Controlla descrizione, importo positivo e data valida.');
+ const accountId=el('transaction-account').value;
+ if(!state.accounts.some(a=>a.id===accountId))return alert('Seleziona un conto valido.');
+ const t={id:old?.id||uid(),date,type,description,category,amountCents,recurringId,occMonth,accountId};
+ if(recurringId){
+   const rule=state.recurring.find(r=>r.id===recurringId);
+   if(!rule){
+     if(!old)return alert('La ricorrenza collegata non esiste.');
+     if(old.plannedCents!==undefined)t.plannedCents=old.plannedCents;
+     if(old.recurringFinal!==undefined)t.recurringFinal=old.recurringFinal;
+   }else{
+     if(!validMonth(occMonth)||type!==rule.type)return alert('Ricorrenza o mese di competenza non valido.');
+     const others=state.transactions.filter(x=>x.id!==id&&x.recurringId===recurringId&&x.occMonth===occMonth);
+     const plannedCents=old?.plannedCents||others.find(x=>x.plannedCents!==undefined)?.plannedCents||rule.amountCents;
+     const partial=el('transaction-recurring-status')?.value==='partial';
+     if(others.some(x=>x.recurringFinal!==false)&&(!old||old.recurringFinal!==false||!partial))return alert('La scadenza risulta già conclusa. Modifica o elimina il saldo finale esistente prima di registrarne un altro.');
+     const partialSum=others.filter(x=>x.recurringFinal===false).reduce((sum,x)=>sum+x.amountCents,0);
+     if(partial&&partialSum+amountCents>=plannedCents)return alert('L’acconto non può raggiungere o superare l’importo previsto. Utilizza Saldo finale.');
+     t.plannedCents=plannedCents;t.recurringFinal=!partial;
+   }
+ }
+ if(applyChange(d=>{d.transactions=old?d.transactions.map(x=>x.id===id?t:x):[...d.transactions,t]})){
+   closeModal();render();showToast(old?'Movimento aggiornato':'Movimento registrato');
+ }
+}
 function recurringSubmit(){const id=el('recurring-id').value,old=id?state.recurring.find(r=>r.id===id):null,type=el('recurring-form').dataset.type,description=el('recurring-description').value.trim(),amountCents=amountFromInput(el('recurring-amount').value),category=el('recurring-category').value,day=Number(el('recurring-day').value),startMonth=el('recurring-start').value,endMonth=el('recurring-end').value||null,active=el('recurring-active').value==='yes';if(!description||!category||amountCents===null||!Number.isInteger(day)||day<1||day>31||!validMonth(startMonth)||endMonth&&(!validMonth(endMonth)||endMonth<startMonth))return alert('Verifica l’importo, il giorno (1-31) e il periodo indicato.');const accountId=el('recurring-account').value;if(!state.accounts.some(a=>a.id===accountId))return alert('Seleziona un conto valido.');const r={id:old?.id||uid(),type,description,amountCents,category,day,startMonth,endMonth,active,accountId};if(applyChange(d=>{d.recurring=old?d.recurring.map(x=>x.id===id?r:x):[...d.recurring,r]})){closeModal();render();showToast(old?'Ricorrenza aggiornata':'Ricorrenza aggiunta')} }
 function deleteItem(kind,id){if(!confirm(kind==='transaction'?'Eliminare definitivamente questo movimento?':'Eliminare questa ricorrenza? I movimenti già confermati resteranno nel registro.'))return;if(applyChange(d=>{if(kind==='transaction')d.transactions=d.transactions.filter(x=>x.id!==id);else d.recurring=d.recurring.filter(x=>x.id!==id)})){closeModal();render();showToast('Voce eliminata')}}
 function download(text,filename,mime){const blob=new Blob([text],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000)}
