@@ -31,7 +31,7 @@ test('SEGNOTA Studio is visibly present in Dashboard and Settings; existing data
   removeItem:key=>content.delete(key)
  };
  const sandbox=vm.createContext({document,localStorage,window:{addEventListener(){},scrollTo(){}},navigator:{},location:{protocol:'https:'},
-  alert(){},confirm(){return false},setTimeout(){return 0},clearTimeout(){},console,Intl,Date,Math,JSON,Number,Map,Set,Error});
+  alert(){},confirm(){return false},TextEncoder,TextDecoder,btoa,atob,setTimeout(){return 0},clearTimeout(){},console,Intl,Date,Math,JSON,Number,Map,Set,Error});
  vm.runInContext(read('core.js'),sandbox);
  vm.runInContext(read('reconciliation.js'),sandbox);
  vm.runInContext(read('reconciliation25.js'),sandbox);
