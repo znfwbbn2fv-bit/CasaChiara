@@ -7,7 +7,7 @@
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const labels={open:'Aperto',review:'In verifica',resolved:'Risolto'};
   const fmt=x=>new Date(x).toLocaleString('it-IT');
-  const latest=checks=>[...checks].sort((a,b)=>b.createdAt.localeCompare(a.createdAt))[0];
+  const latest=checks=>checks.reduce((best,c)=>!best||c.createdAt>=best.createdAt?c:best,null);
   function findings(state,accountId,date,difference){
     if(difference===0)return [{type:'ok',message:'I saldi coincidono. Questo non esclude errori che si compensano: confronta comunque i movimenti con l’estratto conto.'}];
     const amount=Math.abs(difference);
