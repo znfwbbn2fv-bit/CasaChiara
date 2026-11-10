@@ -82,7 +82,8 @@
     const linked=new Set(c.auditIds);
     const candidates=state.auditLog.filter(x=>x.accountIds.includes(c.accountId)&&x.at>=c.createdAt).slice(-40).reverse();
     const last=latest(state.reconciliations.filter(x=>x.accountId===c.accountId));
-    const canResolve=!!last&&last.differenceCents===0&&last.createdAt>c.createdAt;
+    const initialIndex=state.reconciliations.findIndex(x=>x.id===c.checkId);
+    const canResolve=!!last&&last.differenceCents===0&&state.reconciliations.indexOf(last)>initialIndex&&last.date>=state.reconciliations[initialIndex].date;
     return '<div class="dialog-body"><form id="case-form"><input type="hidden" id="case-id" value="'+esc(id)+'">'+
       '<p class="recon-minor">Conto: '+esc(a?.name||'—')+'. Per contrassegnare un errore come risolto, salva prima una nuova verifica con differenza pari a zero.</p>'+
       '<div class="form-field"><label for="case-status">Stato</label><select class="field" id="case-status">'+Object.entries(labels).map(([v,l])=>'<option value="'+v+'" '+(v===c.status?'selected':'')+(v==='resolved'&&!canResolve&&c.status!=='resolved'?' disabled':'')+'>'+l+'</option>').join('')+'</select></div>'+
