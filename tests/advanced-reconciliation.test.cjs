@@ -26,6 +26,9 @@ test('Case persist in same schema as v2.4 and never affect financial balances',(
  assert.equal(core.accountBalance(normalized,'2026-11','main'),expected);
  assert.deepEqual(normalized.reconciliationCases,s.reconciliationCases);
  assert.equal(normalized.settings.openingCents,100000);
+ const exported=globalThis.CasaChiaraRecon.csv(normalized);
+ assert.match(exported,/CASI DI RICONCILIAZIONE/);
+ assert.match(exported,/case1/);
 });
 test('Case validation disallows forged links, invalid statuses, invalid audits',()=>{
  const s=make(),c=addCheck(s),v={id:'case1',accountId:'main',checkId:c.id,createdAt:'2026-11-10T07:01:00Z',updatedAt:'2026-11-10T07:01:00Z',resolvedAt:null,status:'open',reason:'Altro',note:'',auditIds:[],history:[]};
