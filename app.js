@@ -281,7 +281,7 @@ function reconcileSubmit(){
       const existing=candidate.reconciliationCases.find(c=>c.accountId===accountId&&c.status!=='resolved');
       if(existing){
         existing.updatedAt=openedAt;
-        if(existing.history.length<100)existing.history.push({at:openedAt,status:existing.status,note:'Nuova verifica, scostamento '+euro(differenceCents)+'.'});
+        if(existing.history.length<1000)existing.history.push({at:openedAt,status:existing.status,note:'Nuova verifica, scostamento '+euro(differenceCents)+'.'});
       }else candidate.reconciliationCases.push({id:uid(),accountId,checkId:record.id,createdAt:openedAt,updatedAt:openedAt,status:'open',resolvedAt:null,reason,note,auditIds:[],history:[{at:openedAt,status:'open',note:'Caso creato per verifica con scostamento.'}]});
     }
     state=checkData(candidate);
@@ -292,7 +292,7 @@ function reconcileSubmit(){
 
 function createLegacyCase(checkId){
   const c=state.reconciliations.find(x=>x.id===checkId);
-  if(!c||c.differenceCents===0||state.reconciliationCases.some(k=>k.checkId===checkId))return;
+  if(!c||c.differenceCents===0||state.reconciliationCases.some(k=>k.checkId===checkId||(k.accountId===c.accountId&&k.status!=='resolved')))return;
   const at=new Date().toISOString(),item={id:uid(),accountId:c.accountId,checkId:c.id,createdAt:at,updatedAt:at,status:'open',resolvedAt:null,reason:c.reason,note:c.note,auditIds:[],history:[{at,status:'open',note:'Caso creato da una verifica precedente.'}]};
   if(applyChange(d=>{d.reconciliationCases.push(item)})){render();showToast('Caso aperto per la verifica precedente.')}
 }
