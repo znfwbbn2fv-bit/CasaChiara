@@ -6,15 +6,15 @@ const path=require('node:path');
 const vm=require('node:vm');
 const root=path.join(__dirname,'..');
 const read=name=>fs.readFileSync(path.join(root,name),'utf8');
-test('2.5.0 author attribution in app, footer and metadata without changing storage format',()=>{
+test('2.6.0 author attribution in app, footer and metadata without changing storage format',()=>{
  const index=read('index.html'),manifest=JSON.parse(read('manifest.webmanifest')),sw=read('sw.js'),app=read('app.js');
  assert.match(index,/<meta name="author" content="SEGNOTA Studio">/);
  assert.match(index,/Developed by <strong>SEGNOTA Studio<\/strong>/);
- assert.match(index,/CasaChiara 2\.5\.0/);
+ assert.match(index,/CasaChiara 2\.6\.0/);
  assert.equal(manifest.name,'CasaChiara · Finanze domestiche');
  assert.match(manifest.description,/SEGNOTA Studio/);
- assert.match(sw,/casachiara-static-v2\.5\.0/);
- assert.match(app,/const APP_VERSION='2\.5\.0'/);
+ assert.match(sw,/casachiara-static-v2\.6\.0/);
+ assert.match(app,/const APP_VERSION='2\.6\.0'/);
  assert.match(app,/const STORAGE_KEY='casachiara\.pwa\.v4'/);
 });
 test('SEGNOTA Studio is visibly present in Dashboard and Settings; existing data remain unchanged',()=>{
@@ -37,6 +37,7 @@ test('SEGNOTA Studio is visibly present in Dashboard and Settings; existing data
  vm.runInContext(read('reconciliation25.js'),sandbox);
  sandbox.crypto={subtle:{}};
  vm.runInContext(read('secure-backup.js'),sandbox);
+ vm.runInContext(read('planning26.js'),sandbox);
  const state=JSON.parse(JSON.stringify(sandbox.CasaChiaraCore.makeState('2026-11')));
  state.transactions.push({id:'test-credit',date:'2026-11-04',type:'expense',amountCents:1234,description:'Spesa precedente',category:'Alimentari',recurringId:null,occMonth:null,accountId:'main'});
  const before=JSON.stringify(state);
@@ -49,6 +50,6 @@ test('SEGNOTA Studio is visibly present in Dashboard and Settings; existing data
  handlers.click({target:{closest(){return {dataset:{view:'settings'},hasAttribute(){return false}}}}});
  assert.match(el('app-content').innerHTML,/Informazioni sull'app/);
  assert.match(el('app-content').innerHTML,/Developed by <strong>SEGNOTA Studio<\/strong>/);
- assert.match(el('app-content').innerHTML,/Versione <strong>2.5.0<\/strong>/);
+ assert.match(el('app-content').innerHTML,/Versione <strong>2.6.0<\/strong>/);
  assert.equal(localStorage.getItem('casachiara.pwa.v4'),before);
 });
