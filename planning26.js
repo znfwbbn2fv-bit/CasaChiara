@@ -75,5 +75,21 @@
     }).join('');
     return '<section class="card plan-trend"><h2 class="section-title">Andamento del patrimonio</h2><p class="section-sub">Saldi progressivi di fine mese, trasferimenti interni esclusi dal risultato</p><div class="plan-trend-list">'+rows+'</div><p class="recon-minor">Le barre rappresentano il valore assoluto; i saldi negativi sono evidenziati separatamente. I mesi futuri mostrano esclusivamente ciò che è già stato registrato, senza proiezioni.</p></section>';
   }
-  g.CasaChiaraPlanning26=Object.freeze({occurrence,monthRows,pendingNet,projection,trend,forecastHTML,trendHTML,ending,dateOf});
+
+  function deadlineHTML(state,month,now,accountName){
+    const items=monthRows(state,month,now);
+    const pending=items.filter(x=>x.occurrence.state!=='completed');
+    const overdue=pending.filter(x=>x.expired).length;
+    const soonDate=new Date(now+'T12:00:00');
+    soonDate.setDate(soonDate.getDate()+7);
+    const within=new Date(soonDate.getFullYear(),soonDate.getMonth(),soonDate.getDate());
+    const near=pending.filter(x=>!x.expired&&x.date<=within.getFullYear()+'-'+String(within.getMonth()+1).padStart(2,'0')+'-'+String(within.getDate()).padStart(2,'0')).length;
+    const rows=items.map(x=>{
+      const r=x.rule,o=x.occurrence,done=o.state==='completed';
+      const variance=done&&o.variance?' · Differenza finale '+euro(o.variance):'';
+      return '<div class="entry"><span class="entry-mark '+r.type+'">'+(r.type==='income'?'↑':'↓')+'</span><div class="entry-body"><strong>'+esc(r.description)+'</strong><small>'+esc(x.date)+' · '+esc(accountName(r.accountId))+' · '+esc(r.category)+'</small><small>Previsto '+euro(o.expected)+' · Registrato '+euro(o.paid)+(done?'':' · Residuo '+euro(o.remaining))+variance+'</small><span class="status '+(done?'done':x.expired?'overdue':'')+'">'+esc(x.status)+'</span></div>'+(done?'':'<button class="button soft small" type="button" data-complete="'+esc(r.id)+'">'+(o.state==='partial'?'Registra saldo / acconto':r.type==='income'?'Registra incasso':'Registra pagamento')+'</button>')+'</div>';
+    }).join('');
+    return '<section class="card planning-deadlines"><div class="section-header"><div><h2 class="section-title">Scadenziario · '+esc(month)+'</h2><p class="section-sub">Previsto, registrato, parziale e residuo</p></div><div class="deadline-badges">'+(overdue?'<span class="deadline-pill overdue">'+overdue+' da verificare</span>':'')+(near?'<span class="deadline-pill near">'+near+' imminenti</span>':'')+'</div></div>'+(rows||'<div class="empty"><strong>Nessuna ricorrenza attiva</strong>Puoi programmarne una in questa sezione.</div>')+'<p class="planning-hint">Una scadenza superata non prova un mancato pagamento: verifica prima il conto effettivo. La quota parziale non chiude la scadenza. Non sono previste notifiche in background.</p></section>';
+  }
+  g.CasaChiaraPlanning26=Object.freeze({occurrence,monthRows,pendingNet,projection,trend,forecastHTML,trendHTML,deadlineHTML,ending,dateOf,isScheduled});
 })(globalThis);
