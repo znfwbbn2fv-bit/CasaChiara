@@ -6,9 +6,11 @@ test('La riconciliazione dall’interfaccia salva nel registro senza modificare 
  const el=id=>{if(!nodes.has(id))nodes.set(id,{id,hidden:false,value:'',textContent:'',innerHTML:'',style:{},classList:{toggle(){}},setAttribute(){},querySelector(){return null},replaceChildren(){}});return nodes.get(id)};
  const document={getElementById:el,querySelectorAll(){return []},addEventListener(event,cb){handlers[event]=cb}};
  const localStorage={getItem:k=>content.get(k)??null,setItem:(k,v)=>content.set(k,String(v)),removeItem:k=>content.delete(k)};
- const sandbox=vm.createContext({document,localStorage,window:{addEventListener(){},scrollTo(){}},navigator:{},location:{protocol:'https:'},alert(msg){throw Error(msg)},confirm(){return false},setTimeout(){return 0},clearTimeout(){},console,Intl,Date,Math,JSON,Number,Map,Set,Error});
+ const sandbox=vm.createContext({document,localStorage,window:{addEventListener(){},scrollTo(){}},navigator:{},location:{protocol:'https:'},alert(msg){throw Error(msg)},confirm(){return false},TextEncoder,TextDecoder,btoa,atob,setTimeout(){return 0},clearTimeout(){},console,Intl,Date,Math,JSON,Number,Map,Set,Error});
  vm.runInContext(read('core.js'),sandbox);
  vm.runInContext(read('reconciliation.js'),sandbox);
+ vm.runInContext(read('reconciliation25.js'),sandbox);
+ vm.runInContext(read('secure-backup.js'),sandbox);
  const now=new Date(),month=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0')].join('-'),date=month+'-01';
  const opening=83000;
  const s=sandbox.CasaChiaraCore.makeState(month);
@@ -31,4 +33,34 @@ test('La riconciliazione dall’interfaccia salva nel registro senza modificare 
  assert.equal(after.reconciliations[0].actualCents,73000);
  assert.equal(after.auditLog.length,0);
  assert.match(el('app-content').innerHTML,/Allineato/);
+ // Una verifica con errore apre un caso senza cambiare il saldo.
+ el('recon-account').value='main';el('recon-date').value=date;
+ el('recon-actual').value='729,00';el('recon-reason').value='Importo errato';el('recon-note').value='Da verificare';
+ handlers.submit({target:{id:'reconciliation-form'},preventDefault(){}});
+ let mistaken=JSON.parse(localStorage.getItem('casachiara.pwa.v4'));
+ assert.equal(mistaken.reconciliationCases.length,1);
+ assert.equal(mistaken.reconciliationCases[0].status,'open');
+ assert.equal(mistaken.reconciliationCases[0].note,'Da verificare');
+ assert.equal(sandbox.CasaChiaraCore.totalBalance(mistaken,month),73000);
+ // Ripetere lo stesso errore non apre un secondo caso.
+ el('recon-account').value='main';el('recon-date').value=date;
+ el('recon-actual').value='729,00';el('recon-reason').value='Importo errato';el('recon-note').value='Ancora da verificare';
+ handlers.submit({target:{id:'reconciliation-form'},preventDefault(){}});
+ mistaken=JSON.parse(localStorage.getItem('casachiara.pwa.v4'));
+ assert.equal(mistaken.reconciliationCases.length,1);
+ assert.ok(mistaken.reconciliationCases[0].history.length>=2);
+ // Dopo la verifica senza scostamento il caso può essere risolto con nota.
+ el('recon-account').value='main';el('recon-date').value=date;
+ el('recon-actual').value='730,00';el('recon-reason').value='Da determinare';el('recon-note').value='Risaldi allineati';
+ handlers.submit({target:{id:'reconciliation-form'},preventDefault(){}});
+ mistaken=JSON.parse(localStorage.getItem('casachiara.pwa.v4'));
+ el('case-id').value=mistaken.reconciliationCases[0].id;
+ el('case-status').value='resolved';el('case-reason').value='Errore classificazione';
+ el('case-note').value='Verifica successiva superata';
+ handlers.submit({target:{id:'case-form'},preventDefault(){}});
+ const completed=JSON.parse(localStorage.getItem('casachiara.pwa.v4'));
+ assert.equal(completed.reconciliationCases[0].status,'resolved');
+ assert.ok(completed.reconciliationCases[0].resolvedAt);
+ assert.equal(completed.reconciliationCases[0].history.length,3);
+ assert.equal(sandbox.CasaChiaraCore.totalBalance(completed,month),73000);
 });

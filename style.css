@@ -84,3 +84,29 @@
 .recon-log-detail>div{border-radius:11px;background:#f8f8fc;padding:12px}
 .recon-log-detail p{white-space:pre-wrap;overflow-wrap:anywhere;margin:0;font-size:12px;line-height:1.7}
 @media(max-width:760px){.bottom-nav button{min-width:0;flex:1;font-size:9px;padding:3px 1px}.bottom-nav span{font-size:19px}.recon-comparison,.recon-pairs{grid-template-columns:1fr;gap:5px}.recon-comparison>div{padding:10px 12px}.recon-comparison strong{font-size:19px}.recon-pairs span{display:flex;justify-content:space-between;gap:10px}}
+
+/* Versione 2.5 — casi di riconciliazione e salute dei conti */
+.recon-health{margin:15px 0 20px}
+.recon-health-row{padding:13px 0;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:14px}
+.recon-health-row:first-of-type{border-top:0}
+.recon-health-row strong{display:block;font-size:13px}
+.recon-health-row small{display:block;color:var(--muted);font-size:11px;margin-top:5px}
+.recon-health-pill{font-size:11px;font-weight:800;border-radius:99px;padding:6px 10px;background:#f2f2f7;color:#64748b;white-space:nowrap}
+.recon-health-pill.ok{background:var(--green-light);color:var(--green)}
+.recon-health-pill.stale,.recon-health-pill.unchecked{background:var(--yellow-light);color:#8a612c}
+.recon-health-pill.problem{background:var(--red-light);color:var(--red)}
+.recon-case{border:1px solid var(--line);border-left:4px solid var(--purple);border-radius:14px;padding:15px;margin:12px 0}
+.recon-case p{font-size:12px;line-height:1.5;margin:9px 0}
+.recon-case details{background:#f8f8fc;border-radius:10px;padding:12px;margin:10px 0}
+.recon-case summary{cursor:pointer;font-weight:750}
+.recon-case li{overflow-wrap:anywhere;margin:8px 0;font-size:11px}
+.recon-orphans{border-top:1px solid var(--line);margin-top:18px;padding-top:14px}
+.recon-orphan{display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid var(--line);padding:9px 0;font-size:12px}
+.recon-audit-choices{display:grid;gap:8px;max-height:250px;overflow:auto;background:#f8f8fc;border:1px solid var(--line);padding:10px;border-radius:11px}
+.recon-check{display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.5;cursor:pointer}
+.recon-check input{accent-color:var(--purple);margin-top:2px;flex:none}
+.recon-findings{background:#f8f6fe;border:1px solid #e8e3f9;padding:14px;border-radius:13px;margin-bottom:14px}
+.recon-findings strong{font-size:12px;color:var(--purple)}
+.recon-findings ul{padding-left:19px;margin:9px 0 0;line-height:1.65;color:#5d6881;font-size:12px}
+.recon-findings li{margin-top:7px}
+@media(max-width:760px){.recon-health-pill{font-size:10px}.recon-orphan{flex-wrap:wrap}.recon-orphan span{overflow-wrap:anywhere}}

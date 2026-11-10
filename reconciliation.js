@@ -76,6 +76,8 @@
     for(const c of state.reconciliations||[])rows.push([c.createdAt,c.date,accountName(state,c.accountId),(c.calculatedCents/100).toFixed(2),(c.actualCents/100).toFixed(2),(c.differenceCents/100).toFixed(2),status(c),c.reason,c.note]);
     rows.push([],['REGISTRO MODIFICHE'],['Registrata il','Elemento','Operazione','Conti interessati','Descrizione','Prima','Dopo','Dettagli']);
     for(const a of state.auditLog||[])rows.push([a.at,kinds[a.kind],a.action,a.accountIds.map(id=>accountName(state,id)).join(' / '),a.title,a.before,a.after,a.detail]);
+    rows.push([],['CASI DI RICONCILIAZIONE'],['ID caso','Conto','Verifica originale','Aperto il','Ultima modifica','Stato','Risolto il','Causa','Note','Correzioni collegate','Storico stati']);
+    for(const c of state.reconciliationCases||[])rows.push([c.id,accountName(state,c.accountId),c.checkId,c.createdAt,c.updatedAt,c.status,c.resolvedAt||'',c.reason,c.note,c.auditIds.join(' / '),c.history.map(h=>h.at+': '+h.status+' '+h.note).join(' | ')]);
     return '\ufeff'+rows.map(a=>a.map(csvSafe).join(';')).join('\r\n');
   }
   function render(state,today,filter){
@@ -104,7 +106,7 @@
       '<div class="form-field"><label for="recon-reason">Possibile causa dello scostamento</label><select id="recon-reason" class="field">'+reasons.map(v=>'<option>'+esc(v)+'</option>').join('')+'</select></div>'+
       '<div class="form-field full"><label for="recon-note">Note (facoltative)</label><textarea id="recon-note" class="field" maxlength="500" rows="2" placeholder="Es. addebito non registrato; estratto conto verificato"></textarea></div></div>'+
       '<div class="recon-comparison"><div><small>Saldo calcolato</small><strong id="recon-calculated">'+(initial===null?'—':eur(initial))+'</strong></div><div><small>Saldo reale inserito</small><strong id="recon-real-preview">—</strong></div><div><small>Differenza: reale − calcolato</small><strong id="recon-difference">—</strong></div></div>'+
-      '<p class="recon-minor">Uno scostamento non viene corretto automaticamente: individua la registrazione errata in Movimenti o Conti, correggila e salva una nuova verifica per documentare il risultato.</p><button class="button primary" type="submit">Salva verifica nel registro</button></form></section>'+
+      '<div id="recon-diagnostics" aria-live="polite"></div><p class="recon-minor">Uno scostamento non viene corretto automaticamente: individua la registrazione errata in Movimenti o Conti, correggila e salva una nuova verifica per documentare il risultato.</p><button class="button primary" type="submit">Salva verifica nel registro</button></form></section>'+
       '<section class="card"><div class="section-header"><div><h2 class="section-title">Registro delle riconciliazioni</h2><p class="section-sub">Confronto storico tra saldo dell’app e saldo reale, con eventuale causa annotata.</p></div><button type="button" id="recon-export" class="button soft small">Esporta registro CSV</button></div><div class="recon-filter">'+filterHtml+'</div>'+checkHtml+(checks.length>40?'<p class="recon-minor">Visualizzate le ultime 40 verifiche: il CSV contiene la cronologia completa.</p>':'')+'</section>'+
       '<section class="card"><h2 class="section-title">Registro delle modifiche</h2><p class="section-sub">Prima e dopo di movimenti, trasferimenti, conti, ricorrenze e budget modificati dopo l’aggiornamento. Il registro non modifica gli importi.</p>'+logHtml+(changes.length>60?'<p class="recon-minor">Visualizzate le ultime 60 modifiche: esporta il CSV per lo storico completo.</p>':'')+'</section>';
   }
