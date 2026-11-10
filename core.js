@@ -103,7 +103,7 @@
       !(c.resolvedAt===null||timestamp(c.resolvedAt))||c.status==='resolved'&&!c.resolvedAt||
       c.status!=='resolved'&&c.resolvedAt!==null||!short(c.reason,90)||!short(c.note,500)||
       !Array.isArray(c.auditIds)||c.auditIds.length>100||!c.auditIds.every(id=>identifier(id)&&auditIds.has(id))||
-      !Array.isArray(c.history)||c.history.length>100)throw Error('Caso di riconciliazione non valido.');
+      !Array.isArray(c.history)||c.history.length>1000)throw Error('Caso di riconciliazione non valido.');
       const check=state.reconciliations.find(v=>v.id===c.checkId);
       if(check.accountId!==c.accountId||check.differenceCents===0)throw Error('Caso collegato a una verifica non valida.');
       const seen=new Set();
