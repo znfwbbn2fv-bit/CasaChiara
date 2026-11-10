@@ -304,7 +304,7 @@ function caseSubmit(){
   const selected=[...document.querySelectorAll('input[name="case-audit"]:checked')].map(x=>x.value);
   if(selected.length>100||!selected.every(auditId=>state.auditLog.some(a=>a.id===auditId&&a.accountIds.includes(c.accountId))))return alert('Correzioni selezionate non valide.');
   const last=[...state.reconciliations].filter(x=>x.accountId===c.accountId).sort((a,b)=>b.createdAt.localeCompare(a.createdAt))[0];
-  if(status==='resolved'&&c.status!=='resolved'&&(!last||last.createdAt<=c.createdAt||last.differenceCents!==0))return alert('Per risolvere il caso salva prima una nuova riconciliazione con saldo allineato.');
+  if(status==='resolved'&&c.status!=='resolved'&&(!last||state.reconciliations.indexOf(last)<=state.reconciliations.findIndex(x=>x.id===c.checkId)||last.date<state.reconciliations.find(x=>x.id===c.checkId).date||last.differenceCents!==0))return alert('Per risolvere il caso salva prima una nuova riconciliazione con saldo allineato.');
   if(status==='resolved'&&c.status!=='resolved'&&!note)return alert('Descrivi la causa e le correzioni prima di chiudere il caso.');
   const at=new Date().toISOString();
   if(applyChange(d=>{
