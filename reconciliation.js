@@ -23,7 +23,7 @@
   function accountName(state,id){return state.accounts.find(a=>a.id===id)?.name||'Conto non presente';}
   function snapshot(kind,item){
     if(!item)return '—';
-    if(kind==='transactions')return item.date+' · '+item.description+' · '+(item.type==='income'?'+':'−')+eur(item.amountCents)+' · '+item.category+' · conto '+item.accountId;
+    if(kind==='transactions')return item.date+' · '+item.description+' · '+(item.type==='income'?'+':'−')+eur(item.amountCents)+' · '+item.category+' · conto '+item.accountId+(item.recurringId?' · '+(item.recurringFinal===false?'Acconto':'Saldo finale')+(item.plannedCents!==undefined?' · previsto '+eur(item.plannedCents):''):'');
     if(kind==='transfers')return item.date+' · '+eur(item.amountCents)+' · da '+item.fromId+' a '+item.toId+(item.note?' · '+item.note:'');
     if(kind==='accounts')return item.name+' · saldo iniziale '+eur(item.openingCents)+' · '+item.type+' · '+(item.active?'attivo':'archiviato');
     if(kind==='recurring')return item.description+' · '+eur(item.amountCents)+' · giorno '+item.day+' · conto '+item.accountId+' · '+(item.active?'attiva':'sospesa');
@@ -42,6 +42,8 @@
       if(oldItem.type!==newItem.type)changes.push('tipo');
       if(oldItem.description!==newItem.description)changes.push('descrizione');
       if(oldItem.category!==newItem.category)changes.push('categoria');
+      if(oldItem.recurringFinal!==newItem.recurringFinal)changes.push('stato acconto/saldo finale');
+      if(oldItem.plannedCents!==newItem.plannedCents)changes.push('importo ricorrente previsto');
       return changes.length?'Campi modificati: '+changes.join(', '):'Modifica di altri dettagli';
     }
     return 'Dati modificati';
