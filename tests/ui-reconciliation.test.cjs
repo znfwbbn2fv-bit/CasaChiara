@@ -61,6 +61,6 @@ test('La riconciliazione dall’interfaccia salva nel registro senza modificare 
  const completed=JSON.parse(localStorage.getItem('casachiara.pwa.v4'));
  assert.equal(completed.reconciliationCases[0].status,'resolved');
  assert.ok(completed.reconciliationCases[0].resolvedAt);
- assert.equal(completed.reconciliationCases[0].history.length,2);
+ assert.equal(completed.reconciliationCases[0].history.length,3);
  assert.equal(sandbox.CasaChiaraCore.totalBalance(completed,month),73000);
 });
