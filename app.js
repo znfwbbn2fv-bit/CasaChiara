@@ -7,10 +7,11 @@ const CORE=globalThis.CasaChiaraCore;
 const RECON=globalThis.CasaChiaraRecon;
 const CC25=globalThis.CasaChiara25;
 const SECURE=globalThis.CasaChiaraSecureBackup;
-if(!CORE||!RECON||!CC25||!SECURE)throw Error('Moduli CasaChiara 2.5 non disponibili.');
+const PLAN=globalThis.CasaChiaraPlanning26;
+if(!CORE||!RECON||!CC25||!SECURE||!PLAN)throw Error('Moduli CasaChiara 2.5 non disponibili.');
 const ROLLBACK_KEY='casachiara.pwa.v4.before-import';
 const LAST_EXPORT_KEY='casachiara.pwa.v4.last-export-started';
-const APP_VERSION='2.5.0';
+const APP_VERSION='2.6.0';
 let backupFileMode='import';
 const money=new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'});
 const expenseCats=['Casa','Utenze','Alimentari','Trasporti','Salute','Tempo libero','Finanziamenti','Abbonamenti','Animali','Istruzione','Altro'];
@@ -56,9 +57,9 @@ function accountName(id){return state.accounts.find(a=>a.id===id)?.name||'Conto 
 function accountOptions(selected){return state.accounts.filter(a=>a.active||a.id===selected).map(a=>`<option value="${esc(a.id)}" ${a.id===selected?'selected':''}>${esc(a.name)}</option>`).join('')}
 function accountTypeName(t){return ({bank:'Conto corrente',cash:'Contanti',prepaid:'Prepagata',savings:'Risparmi',other:'Altro'})[t]||'Altro'}
 function activeRule(r,m){return r.active&&r.startMonth<=m&&(!r.endMonth||r.endMonth>=m)}
-function completedRule(r,m){return state.transactions.some(t=>t.recurringId===r.id&&t.occMonth===m)}
+function completedRule(r,m){return PLAN.occurrence(state,r,m).state==='completed'}
 function pendingRules(m){return state.recurring.filter(r=>activeRule(r,m)&&!completedRule(r,m)).sort((a,b)=>a.day-b.day)}
-function planStats(m){let income=0,expense=0;for(const r of pendingRules(m)){if(r.type==='income')income+=r.amountCents;else expense+=r.amountCents}return {income,expense,net:income-expense}}
+function planStats(m){return PLAN.pendingNet(state,m)}
 
 function budgetPanel(m,compact=false){
  const summary=CORE.budgetSummary(state,m);
@@ -75,21 +76,7 @@ function budgetPanel(m,compact=false){
  ${categories.length?`<div class="plan-metrics"><div><small>Limiti totali</small><strong>${euro(limitCents)}</strong></div><div><small>Speso nelle categorie</small><strong>${euro(spentBudgetedCents)}</strong></div><div><small>Residuo dei budget</small><strong class="${remaining<0?'bad':''}">${euro(remaining)}</strong></div></div>${rows}`:'<div class="empty"><strong>Non hai ancora impostato budget</strong>Per cominciare, stabilisci una soglia mensile per una categoria di spesa.</div>'}
  ${hint}<div class="planning-tools"><button class="button soft small" type="button" id="copy-budget" ${canCopy?'':'disabled'}>Copia budget da ${esc(monthName(prev))}</button></div><p class="planning-hint">I budget sono obiettivi di spesa, non uscite. Il saldo cambia soltanto registrando movimenti effettivi. Ogni mese ha budget indipendenti.</p></section>`;
 }
-function deadlinePanel(m){
- const pending=pendingRules(m).map(r=>({rule:r,date:dueDate(m,r.day)})).sort((a,b)=>a.date.localeCompare(b.date));
- const now=toDate(today),week=new Date(today.getFullYear(),today.getMonth(),today.getDate()+7),end=toDate(week);
- const overdue=pending.filter(x=>x.date<now).length;
- const coming=pending.filter(x=>x.date>=now&&x.date<=end).length;
- const rows=pending.map(({rule:r,date})=>{
-   const status=date<now?'Scadenza superata':date===now?'Scade oggi':date<=end?'Entro 7 giorni':'In programma';
-   const urgent=date<now?'overdue':date<=end?'near':'';
-   const display=new Date(date+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'});
-   return `<div class="entry"><span class="entry-mark ${r.type}">${r.type==='income'?'↑':'↓'}</span><div class="entry-body"><strong>${esc(r.description)}</strong><small>${esc(display)} · ${esc(accountName(r.accountId))} · ${esc(r.category)}</small><span class="status ${urgent}">${status}</span></div><span class="entry-amount ${r.type}">${r.type==='income'?'+':'−'} ${euro(r.amountCents)}</span><button class="button soft small" type="button" data-complete="${esc(r.id)}">${r.type==='income'?'Incassata':'Pagata'}</button></div>`;
- }).join('');
- return `<section class="card planning-deadlines"><div class="section-header"><div><h2 class="section-title">Scadenziario · ${esc(monthName(m))}</h2><p class="section-sub">Ricorrenze non ancora confermate</p></div><div class="deadline-badges">${overdue?'<span class="deadline-pill overdue">'+overdue+' da verificare</span>':''}${coming?'<span class="deadline-pill near">'+coming+' imminenti</span>':''}</div></div>
- ${pending.length?rows:'<div class="empty"><strong>Nessuna scadenza da confermare</strong>Le ricorrenze di questo mese risultano confermate oppure non sono previste.</div>'}
- <p class="planning-hint">Le date superate indicano ricorrenze non confermate in CasaChiara: verifica il pagamento reale prima di premere Pagata o Incassata. Non vengono inviate notifiche automatiche in background.</p></section>`;
-}
+function deadlinePanel(m){return PLAN.deadlineHTML(state,m,toDate(today),accountName)}
 function metric(title,amount,note,color,icon){return `<article class="card metric"><div class="metric-top"><h2>${esc(title)}</h2><span class="metric-icon ${color}">${icon}</span></div><div class="metric-value ${color}">${amount}</div><p>${esc(note)}</p></article>`}
 function entryList(ts,limit=null){let list=limit?ts.slice(0,limit):ts;return list.length?list.map(t=>`<div class="entry"><span class="entry-mark ${t.type}">${t.type==='income'?'↑':'↓'}</span><div class="entry-body"><strong>${esc(t.description)}</strong><small>${esc(t.category)} · ${esc(accountName(t.accountId))} · ${new Date(t.date+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'})}${t.recurringId?' · Da ricorrenza':''}</small></div><span class="entry-amount ${t.type}">${t.type==='income'?'+':'−'} ${euro(t.amountCents)}</span><button class="icon-button" type="button" data-edit-transaction="${esc(t.id)}">Modifica</button></div>`).join(''):'<div class="empty"><strong>Nessun movimento</strong>Registra un’entrata o una spesa per iniziare.</div>'}
 function dashboard(){const t=totalForMonth(selectedMonth),b=sumBalance(selectedMonth),p=planStats(selectedMonth);let bars=[],max=1;for(let i=-5;i<=0;i++){const m=addMonth(selectedMonth,i),z=totalForMonth(m);bars.push({m,...z});max=Math.max(max,z.income,z.expense)}const graph=bars.map(z=>`<div class="bar-month" title="${esc(monthName(z.m))}: ${euro(z.income)} entrate, ${euro(z.expense)} uscite"><span class="bar income" style="height:${Math.max(2,Math.round(z.income/max*100))}%"></span><span class="bar expense" style="height:${Math.max(2,Math.round(z.expense/max*100))}%"></span><label>${esc(monthName(z.m,true))}</label></div>`).join('');
@@ -98,6 +85,8 @@ function dashboard(){const t=totalForMonth(selectedMonth),b=sumBalance(selectedM
  let due=pendingRules(selectedMonth).slice(0,5);return `<div class="developer-credit" aria-label="Creatore dell’app: SEGNOTA Studio"><span class="developer-credit-mark" aria-hidden="true">✦</span><span>Developed by <strong>SEGNOTA Studio</strong></span></div><section class="metrics">${metric('Entrate incassate',euro(t.income),'Somma effettivamente ricevuta','green','↗')}${metric('Spese effettuate',euro(t.expense),'Somma effettivamente pagata','red','↘')}${metric('Risultato del mese',positive(t.net),'Solo movimenti effettivi','purple','◈')}${metric('Saldo progressivo',b===null?'—':euro(b),'Dalla data del saldo iniziale','yellow','▣')}</section>
  <section class="account-preview"><div class="section-header"><div><h2 class="section-title">I tuoi conti</h2><p class="section-sub">Disponibilità separate · totale già incluso nel saldo progressivo</p></div><div class="backup-actions"><button class="button soft small" type="button" data-view="reconciliation">Riconcilia</button><button class="button soft small" type="button" data-view="accounts">Gestisci conti</button></div></div><div class="account-preview-grid">${state.accounts.map(a=>`<article class="account-tile"><small>${esc(accountTypeName(a.type))}</small><strong>${esc(a.name)}</strong><span >${CORE.accountBalance(state,selectedMonth,a.id)===null?'—':euro(CORE.accountBalance(state,selectedMonth,a.id))}</span></article>`).join('')}</div></section>
  ${CC25.healthHTML(state,toDate(today))}
+ ${PLAN.forecastHTML(state,selectedMonth,toDate(today))}
+ ${PLAN.trendHTML(state,selectedMonth)}
  ${budgetPanel(selectedMonth,true)}
  <section class="quick-grid"><button type="button" class="quick-action" data-quick="fixed-expense"><span class="quick-icon">−</span><strong>Spesa fissa</strong><small>Mutuo, bollette, abbonamenti</small></button><button type="button" class="quick-action" data-quick="extra-expense"><span class="quick-icon">−</span><strong>Spesa extra</strong><small>Acquisti, imprevisti, svago</small></button><button type="button" class="quick-action income" data-quick="fixed-income"><span class="quick-icon">+</span><strong>Entrata mensile</strong><small>Stipendio, pensione, affitti</small></button><button type="button" class="quick-action income" data-quick="extra-income"><span class="quick-icon">+</span><strong>Entrata extra</strong><small>Rimborsi e guadagni occasionali</small></button></section>
  <section class="dashboard-grid"><article class="card"><div class="section-header"><div><h2 class="section-title">Andamento finanziario</h2><p class="section-sub">Ultimi sei mesi · dati effettivi</p></div><div class="legend"><span class="legend-item"><i class="dot" style="background:#99ddcb"></i>Entrate</span><span class="legend-item"><i class="dot" style="background:#f4abba"></i>Spese</span></div></div><div class="bar-chart" role="img" aria-label="Grafico a barre delle entrate e spese effettive negli ultimi sei mesi">${graph}</div></article><article class="card"><h2 class="section-title">Dove spendi</h2><p class="section-sub">Distribuzione delle spese per categoria</p>${donut}</article></section>
@@ -118,11 +107,11 @@ function recurringView(){
   const rules=state.recurring.filter(r=>recurringFilter==='all'||activeRule(r,selectedMonth)).sort((a,b)=>a.day-b.day);
   const rows=rules.map(r=>{
     const isActive=activeRule(r,selectedMonth);
-    const done=completedRule(r,selectedMonth);
+    const occur=PLAN.occurrence(state,r,selectedMonth),done=occur.state==='completed';
     const period=`Da ${esc(monthName(r.startMonth))}${r.endMonth?' a '+esc(monthName(r.endMonth)):''}`;
-    const status=!isActive?'Non prevista':done?'Confermata':'Da confermare';
+    const status=!isActive?'Non prevista':done?'Confermata':occur.state==='partial'?'Parziale':'Da confermare';
     const complete=(isActive&&!done) ? `<button class="button soft small" type="button" data-complete="${esc(r.id)}">${r.type==='income'?'Incassata':'Pagata'}</button>` : '';
-    return `<div class="entry"><span class="entry-mark ${r.type}">${r.type==='income'?'↑':'↓'}</span><div class="entry-body"><strong>${esc(r.description)}</strong><small>${esc(r.category)} · Giorno ${r.day} · ${period}</small><span class="status ${!isActive?'off':done?'done':''}">${status}</span></div><span class="entry-amount ${r.type}">${r.type==='income'?'+':'−'} ${euro(r.amountCents)}</span><div class="entry-actions">${complete}<button class="icon-button" type="button" data-edit-recurring="${esc(r.id)}">Modifica</button></div></div>`;
+    return `<div class="entry"><span class="entry-mark ${r.type}">${r.type==='income'?'↑':'↓'}</span><div class="entry-body"><strong>${esc(r.description)}</strong><small>${esc(r.category)} · Giorno ${r.day} · ${period}</small><small>Previsto ${euro(occur.expected)} · Registrato ${euro(occur.paid)}${done?' · Differenza '+positive(occur.variance):' · Residuo '+euro(occur.remaining)}</small><span class="status ${!isActive?'off':done?'done':''}">${status}</span></div><span class="entry-amount ${r.type}">${r.type==='income'?'+':'−'} ${euro(r.amountCents)}</span><div class="entry-actions">${complete}<button class="icon-button" type="button" data-edit-recurring="${esc(r.id)}">Modifica</button></div></div>`;
   }).join('');
   return `${budgetPanel(selectedMonth)}${deadlinePanel(selectedMonth)}<div class="alert">Le voci mensili indicano importi <strong>previsti</strong>. La dashboard li conteggia tra entrate e spese effettive soltanto quando confermi il pagamento o l'incasso. Per una scadenza al 31, nei mesi più corti si usa l'ultimo giorno del mese.</div><section class="card"><div class="section-header"><div><h2 class="section-title">Entrate e spese ricorrenti</h2><p class="section-sub">Gestisci gli importi che si ripetono ogni mese</p></div><button class="button primary small" type="button" data-add="recurring">＋ Nuova ricorrenza</button></div><div class="bar-actions"><select class="filter" id="recurring-filter" aria-label="Filtra ricorrenze"><option value="all">Tutte le ricorrenze</option><option value="active" ${recurringFilter==='active'?'selected':''}>Attive nel mese</option></select><span class="preview">${rules.length} voci</span></div>${rules.length?rows:'<div class="empty"><strong>Nessuna ricorrenza</strong>Aggiungi un\'entrata o una spesa mensile.</div>'}</section>`;
 }
