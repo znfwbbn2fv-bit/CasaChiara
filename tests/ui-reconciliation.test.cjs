@@ -42,6 +42,13 @@ test('La riconciliazione dall’interfaccia salva nel registro senza modificare 
  assert.equal(mistaken.reconciliationCases[0].status,'open');
  assert.equal(mistaken.reconciliationCases[0].note,'Da verificare');
  assert.equal(sandbox.CasaChiaraCore.totalBalance(mistaken,month),73000);
+ // Ripetere lo stesso errore non apre un secondo caso.
+ el('recon-account').value='main';el('recon-date').value=date;
+ el('recon-actual').value='729,00';el('recon-reason').value='Importo errato';el('recon-note').value='Ancora da verificare';
+ handlers.submit({target:{id:'reconciliation-form'},preventDefault(){}});
+ mistaken=JSON.parse(localStorage.getItem('casachiara.pwa.v4'));
+ assert.equal(mistaken.reconciliationCases.length,1);
+ assert.ok(mistaken.reconciliationCases[0].history.length>=2);
  // Dopo la verifica senza scostamento il caso può essere risolto con nota.
  el('recon-account').value='main';el('recon-date').value=date;
  el('recon-actual').value='730,00';el('recon-reason').value='Da determinare';el('recon-note').value='Risaldi allineati';
