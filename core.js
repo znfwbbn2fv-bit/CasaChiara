@@ -15,7 +15,7 @@
   const identifier=x=>typeof x==='string'&&x.length>0&&x.length<=80;
   const kind=x=>['income','expense'].includes(x);
   const basicAccount=(openingCents=0)=>({id:'main',name:'Conto principale',type:'bank',openingCents,active:true});
-  const makeState=(m)=>({version:4,settings:{openingMonth:m,openingCents:0},accounts:[basicAccount()],transactions:[],recurring:[],transfers:[],budgets:[],reconciliations:[],auditLog:[]});
+  const makeState=(m)=>({version:4,settings:{openingMonth:m,openingCents:0},accounts:[basicAccount()],transactions:[],recurring:[],transfers:[],budgets:[],reconciliations:[],auditLog:[],reconciliationCases:[]});
 
   function normalize(raw, currentMonth){
     if(!raw||![2,3,4].includes(raw.version)||!raw.settings||!Array.isArray(raw.transactions)||!Array.isArray(raw.recurring))
@@ -92,6 +92,27 @@
       if(!a||!identifier(a.id)||!timestamp(a.at)||!['transactions','transfers','accounts','recurring','budgets','settings'].includes(a.kind)||!['added','removed','edited'].includes(a.action)||!short(a.targetId,160)||!Array.isArray(a.accountIds)||a.accountIds.length>8||!a.accountIds.every(id=>short(id,80))||!short(a.title,160)||!short(a.before,600)||!short(a.after,600)||!short(a.detail,220))throw Error('Registro modifiche non valido.');
       uniq(a.id);
       state.auditLog.push({id:a.id,at:a.at,kind:a.kind,action:a.action,targetId:a.targetId,accountIds:[...a.accountIds],title:a.title,before:a.before,after:a.after,detail:a.detail});
+    }
+    const cases=raw.reconciliationCases===undefined?[]:raw.reconciliationCases;
+    if(!Array.isArray(cases)||cases.length>10000)throw Error('Registro casi di riconciliazione non valido.');
+    const checkIds=new Set(state.reconciliations.map(c=>c.id));
+    const auditIds=new Set(state.auditLog.map(a=>a.id));
+    for(const c of cases){
+      if(!c||!identifier(c.id)||!belongs(c.accountId)||!identifier(c.checkId)||!checkIds.has(c.checkId)||
+      !timestamp(c.createdAt)||!timestamp(c.updatedAt)||!['open','review','resolved'].includes(c.status)||
+      !(c.resolvedAt===null||timestamp(c.resolvedAt))||c.status==='resolved'&&!c.resolvedAt||
+      c.status!=='resolved'&&c.resolvedAt!==null||!short(c.reason,90)||!short(c.note,500)||
+      !Array.isArray(c.auditIds)||c.auditIds.length>100||!c.auditIds.every(id=>identifier(id)&&auditIds.has(id))||
+      !Array.isArray(c.history)||c.history.length>100)throw Error('Caso di riconciliazione non valido.');
+      const check=state.reconciliations.find(v=>v.id===c.checkId);
+      if(check.accountId!==c.accountId||check.differenceCents===0)throw Error('Caso collegato a una verifica non valida.');
+      const seen=new Set();
+      for(const h of c.history){
+        if(!h||!timestamp(h.at)||!['open','review','resolved'].includes(h.status)||!short(h.note,500))throw Error('Storico del caso non valido.');
+      }
+      if(c.auditIds.some(id=>{if(seen.has(id))return true;seen.add(id);return false}))throw Error('Correzione collegata due volte.');
+      uniq(c.id);
+      state.reconciliationCases.push({id:c.id,accountId:c.accountId,checkId:c.checkId,createdAt:c.createdAt,updatedAt:c.updatedAt,status:c.status,resolvedAt:c.resolvedAt,reason:c.reason,note:c.note,auditIds:[...c.auditIds],history:c.history.map(h=>({at:h.at,status:h.status,note:h.note}))});
     }
     const sum=state.accounts.reduce((n,a)=>n+a.openingCents,0);
     if(!Number.isSafeInteger(sum)||Math.abs(sum)>MAX_CENTS)throw Error('Totale saldi iniziali fuori limite.');
