@@ -82,3 +82,24 @@ L'archivio resta locale, offline e indipendente per ciascun dispositivo. Non è 
 - La stessa attribuzione compare nel footer e in **Impostazioni → Informazioni sull'app**.
 - I metadati HTML e la descrizione del manifest indicano SEGNOTA Studio come autore/sviluppatore, mantenendo **CasaChiara** come nome dell'app.
 - Aggiornamento esclusivamente di presentazione: chiave locale `casachiara.pwa.v4` e schema finanziario invariati.
+
+
+## Versione 2.4.0 — Riconciliazione e registro correzioni
+
+### Come verificare il saldo senza alterare i dati
+1. **Prima dell'aggiornamento**, apri Impostazioni ed esporta e verifica un backup JSON. Controlla che sia presente nell'app File.
+2. Apri la sezione **Riconcilia** (desktop, iPad e iPhone) e scegli **Postepay**, **Contanti** o un altro conto.
+3. Seleziona **la data** a cui si riferisce il saldo reale e inserisci **il saldo reale**, anche se pari a zero o negativo.
+4. Controlla **saldo calcolato**, **saldo reale** e **differenza = reale − calcolato**. Se c'è una discrepanza, scegli una possibile causa e inserisci una nota.
+5. Premi **Salva verifica nel registro**. La verifica **non genera movimenti**, non cambia il saldo iniziale e non aggiusta automaticamente la differenza.
+6. In caso di discrepanze, correggi separatamente il movimento, trasferimento o saldo iniziale errato nelle sezioni già esistenti. Ogni inserimento, modifica o eliminazione successivi alla 2.4.0 alimenterà il **registro modifiche** con valori prima e dopo.
+7. Torna in **Riconcilia**, salva una **nuova verifica** e controlla che la differenza sia zero. Espandi il dettaglio delle correzioni nel registro per confrontare gli errori e la loro risoluzione.
+8. Premi **Esporta registro CSV** per ottenere le riconciliazioni e le modifiche da consultare in Excel.
+
+### Limitazioni e garanzie
+- Lo storico conserva la fotografia del saldo calcolato alla data di registrazione della verifica; un controllo precedente non cambia quando correggi i movimenti.
+- Il registro modifiche inizia **dopo l'aggiornamento**: non è possibile ricostruire automaticamente gli errori e le correzioni effettuate nelle versioni precedenti.
+- I vecchi archivi senza riconciliazioni continuano a funzionare. Lo schema resta **versione 4** e la chiave locale resta **casachiara.pwa.v4**.
+- Backup e ripristini JSON includono sia reconciliations che auditLog. Importare un backup precedente **sostituisce** anche la storia corrente: esporta sempre una nuova copia prima di importare.
+- Le verifiche e il registro delle modifiche non costituiscono una prova antifrode o una certificazione bancaria: il file locale può essere sostituito o alterato da chi ha accesso ai dati. Il registro serve alla diagnosi e al confronto personale.
+- Il servizio non legge conti bancari né informazioni esterne e non carica lo storico su GitHub.

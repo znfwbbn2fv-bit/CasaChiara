@@ -15,7 +15,7 @@
   const identifier=x=>typeof x==='string'&&x.length>0&&x.length<=80;
   const kind=x=>['income','expense'].includes(x);
   const basicAccount=(openingCents=0)=>({id:'main',name:'Conto principale',type:'bank',openingCents,active:true});
-  const makeState=(m)=>({version:4,settings:{openingMonth:m,openingCents:0},accounts:[basicAccount()],transactions:[],recurring:[],transfers:[],budgets:[]});
+  const makeState=(m)=>({version:4,settings:{openingMonth:m,openingCents:0},accounts:[basicAccount()],transactions:[],recurring:[],transfers:[],budgets:[],reconciliations:[],auditLog:[]});
 
   function normalize(raw, currentMonth){
     if(!raw||![2,3,4].includes(raw.version)||!raw.settings||!Array.isArray(raw.transactions)||!Array.isArray(raw.recurring))
@@ -75,6 +75,23 @@
       if(monthCategories.has(key))throw Error('Categoria budget duplicata nello stesso mese.');
       monthCategories.add(key);
       state.budgets.push({month:b.month,category:b.category,limitCents:b.limitCents});
+    }
+    // New optional fields: all previous v2/v3/v4 backups remain importable.
+    // Entries are snapshots and are never treated as account transactions.
+    const checks=raw.reconciliations===undefined?[]:raw.reconciliations;
+    const audits=raw.auditLog===undefined?[]:raw.auditLog;
+    if(!Array.isArray(checks)||checks.length>30000||!Array.isArray(audits)||audits.length>50000)throw Error('Registri di riconciliazione non validi.');
+    const timestamp=s=>typeof s==='string'&&s.length<=35&&Number.isFinite(Date.parse(s));
+    const short=(v,n)=>typeof v==='string'&&v.length<=n;
+    for(const c of checks){
+      if(!c||!identifier(c.id)||!timestamp(c.createdAt)||!validDate(c.date)||!belongs(c.accountId)||!cents(c.calculatedCents)||!cents(c.actualCents)||!cents(c.differenceCents)||c.differenceCents!==c.actualCents-c.calculatedCents||!short(c.reason,90)||!short(c.note,500))throw Error('Verifica saldo non valida.');
+      uniq(c.id);
+      state.reconciliations.push({id:c.id,createdAt:c.createdAt,date:c.date,accountId:c.accountId,calculatedCents:c.calculatedCents,actualCents:c.actualCents,differenceCents:c.differenceCents,reason:c.reason,note:c.note});
+    }
+    for(const a of audits){
+      if(!a||!identifier(a.id)||!timestamp(a.at)||!['transactions','transfers','accounts','recurring','budgets','settings'].includes(a.kind)||!['added','removed','edited'].includes(a.action)||!short(a.targetId,160)||!Array.isArray(a.accountIds)||a.accountIds.length>8||!a.accountIds.every(id=>short(id,80))||!short(a.title,160)||!short(a.before,600)||!short(a.after,600)||!short(a.detail,220))throw Error('Registro modifiche non valido.');
+      uniq(a.id);
+      state.auditLog.push({id:a.id,at:a.at,kind:a.kind,action:a.action,targetId:a.targetId,accountIds:[...a.accountIds],title:a.title,before:a.before,after:a.after,detail:a.detail});
     }
     const sum=state.accounts.reduce((n,a)=>n+a.openingCents,0);
     if(!Number.isSafeInteger(sum)||Math.abs(sum)>MAX_CENTS)throw Error('Totale saldi iniziali fuori limite.');

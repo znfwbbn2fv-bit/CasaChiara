@@ -19,6 +19,7 @@ jobs:
       - name: Controllo JavaScript e test finanziari
         run: |
           node --check core.js
+          node --check reconciliation.js
           node --check app.js
           node --check sw.js
           node --test tests/*.test.cjs
