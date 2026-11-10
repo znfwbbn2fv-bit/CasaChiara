@@ -76,6 +76,8 @@
     for(const c of state.reconciliations||[])rows.push([c.createdAt,c.date,accountName(state,c.accountId),(c.calculatedCents/100).toFixed(2),(c.actualCents/100).toFixed(2),(c.differenceCents/100).toFixed(2),status(c),c.reason,c.note]);
     rows.push([],['REGISTRO MODIFICHE'],['Registrata il','Elemento','Operazione','Conti interessati','Descrizione','Prima','Dopo','Dettagli']);
     for(const a of state.auditLog||[])rows.push([a.at,kinds[a.kind],a.action,a.accountIds.map(id=>accountName(state,id)).join(' / '),a.title,a.before,a.after,a.detail]);
+    rows.push([],['CASI DI RICONCILIAZIONE'],['ID caso','Conto','Verifica originale','Aperto il','Ultima modifica','Stato','Risolto il','Causa','Note','Correzioni collegate','Storico stati']);
+    for(const c of state.reconciliationCases||[])rows.push([c.id,accountName(state,c.accountId),c.checkId,c.createdAt,c.updatedAt,c.status,c.resolvedAt||'',c.reason,c.note,c.auditIds.join(' / '),c.history.map(h=>h.at+': '+h.status+' '+h.note).join(' | ')]);
     return '\ufeff'+rows.map(a=>a.map(csvSafe).join(';')).join('\r\n');
   }
   function render(state,today,filter){
